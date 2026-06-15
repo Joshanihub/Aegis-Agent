@@ -1,0 +1,136 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type { AgentState, BandMessage, VerdictData, TaskState } from '@/lib/types'
+
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+
+type AegisIdentifiers = {
+  roomId: string | null
+  taskId: string | null
+  recentSessions: { taskId: string; companyName: string; timestamp: string }[]
+}
+
+type AegisSnapshot = {
+  task: TaskState | null
+  agents: AgentState[]
+  messages: BandMessage[]
+  verdict: VerdictData | null
+}
+
+type WsError = {
+  message: string
+  recoverable: boolean
+} | null
+
+type AegisStore = AegisIdentifiers & AegisSnapshot & {
+  roomStatus: ConnectionStatus
+  wsError: WsError
+  initializeFromSnapshot: (snapshot: Omit<AegisSnapshot, 'task'> & { task: TaskState }) => void
+  applyBandMessage: (msg: BandMessage) => void
+  applyAgentStatusChanged: (event: { agent_id: string; status: string; last_action?: string; api_used?: string }) => void
+  setVerdict: (verdict: VerdictData | null) => void
+  setConnectionStatus: (status: ConnectionStatus) => void
+  setWsError: (err: { message: string; recoverable: boolean } | null) => void
+  reset: () => void
+  setRoomIdentifiers: (roomId: string, taskId: string) => void
+}
+
+const initialSnapshot: AegisSnapshot = {
+  task: null,
+  agents: [],
+  messages: [],
+  verdict: null,
+}
+
+export const useAegisStore = create<AegisStore>()(
+  persist(
+    (set) => ({
+      roomId: null,
+      taskId: null,
+      recentSessions: [],
+      ...initialSnapshot,
+      roomStatus: 'disconnected',
+      wsError: null,
+
+      setRoomIdentifiers: (roomId, taskId) =>
+        set(() => ({
+          roomId,
+          taskId,
+        })),
+
+      initializeFromSnapshot: (snapshot) =>
+        set((state) => {
+          const taskName = snapshot.task?.company_name || 'Unknown Target'
+          const taskId = snapshot.task?.task_id
+          let newSessions = [...state.recentSessions]
+          
+          if (taskId && !newSessions.some(s => s.taskId === taskId)) {
+            newSessions.unshift({
+              taskId,
+              companyName: taskName,
+              timestamp: new Date().toISOString()
+            })
+            if (newSessions.length > 5) newSessions.pop()
+          }
+
+          return {
+            ...snapshot,
+            recentSessions: newSessions
+          }
+        }),
+
+      applyBandMessage: (msg) =>
+        set((state) => {
+          // Deduplicate to fix strict mode duplicate renders
+          const exists = state.messages.some(
+            (m) => m.action === msg.action && m.metadata?.cycle === msg.metadata?.cycle && m.owner === msg.owner
+          )
+          if (exists) return state
+          return {
+            messages: [...state.messages, msg],
+          }
+        }),
+
+      applyAgentStatusChanged: (event) =>
+        set((state) => {
+          const agents = state.agents.map((a) => {
+            if (a.agent_id !== event.agent_id) return a
+            return {
+              ...a,
+              status: event.status as AgentState['status'],
+              last_action: event.last_action ?? a.last_action,
+              api_used: event.api_used ?? a.api_used,
+              updated_at: a.updated_at,
+            }
+          })
+          return { agents }
+        }),
+
+      setVerdict: (verdict) =>
+        set((state) => ({
+          verdict,
+          task: state.task ? { ...state.task } : state.task,
+        })),
+
+      setConnectionStatus: (status) => set(() => ({ roomStatus: status })),
+      setWsError: (err) => set(() => ({ wsError: err })),
+
+      reset: () =>
+        set(() => ({
+          roomId: null,
+          taskId: null,
+          ...initialSnapshot,
+          roomStatus: 'disconnected',
+          wsError: null,
+        })),
+    }),
+    {
+      name: 'aegis-session-storage',
+      partialize: (state) => ({ 
+        roomId: state.roomId, 
+        taskId: state.taskId,
+        recentSessions: state.recentSessions || []
+      }),
+    }
+  )
+)
