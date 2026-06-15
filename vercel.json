@@ -7,6 +7,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://aegis-agent-production-55ff.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://aegis-agent-production-55ff.up.railway.app/ws/:path*"
     }
   ]
 }
