@@ -1,0 +1,290 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --surface: #131313;
+    --surface-dim: #0e0e0e;
+    --surface-container-lowest: #0e0e0e;
+    --surface-container-low: #1b1b1b;
+    --surface-container: #1f1f1f;
+    --surface-container-high: #2a2a2a;
+    --surface-container-highest: #353535;
+    --surface-bright: #393939;
+    --surface-glass: rgba(255, 255, 255, 0.03);
+    --surface-variant: #353535;
+
+    /* Text */
+    --on-surface: #e2e2e2;
+    --on-surface-variant: #c8c7ba;
+    --text-muted: #D9D9D9;
+    --on-background: #e2e2e2;
+
+    /* Borders */
+    --border-subtle: rgba(255, 255, 255, 0.10);
+    --outline-variant: #47473e;
+    --outline: #929186;
+
+    /* Brand */
+    --accent-luminous: #D3D6B0;
+    --primary: #f0f2cb;
+    --primary-container: #d3d6b0;
+    --on-primary: #2f3218;
+    --on-primary-container: #5a5d3f;
+    --primary-fixed-dim: #c6c9a4;
+    --inverse-primary: #5d6142;
+    --surface-tint: #c6c9a4;
+
+    /* Secondary */
+    --secondary: #c7c6c6;
+    --on-secondary: #303031;
+    --secondary-container: #464747;
+    --on-secondary-container: #b6b5b5;
+
+    /* Semantic Accents */
+    --cyan-agent: #06b6d4;
+    --rose-agent: #f43f5e;
+    --emerald-agent: #10b981;
+    --amber-agent: #f59e0b;
+    --indigo-init: #6366f1;
+    --crimson-reject: #dc2626;
+
+    /* Typography */
+    --font-display: var(--font-epilogue), sans-serif;
+    --font-body: var(--font-inter), sans-serif;
+    --font-mono: var(--font-jetbrains-mono), monospace;
+
+    /* Motion */
+    --ease-physics: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-quintic-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-enter: 0.8s;
+    --duration-quick: 0.2s;
+
+    /* Glow */
+    --glow-primary: 0 0 40px rgba(211, 214, 176, 0.05);
+    --glow-primary-hover: 0 0 60px rgba(211, 214, 176, 0.15);
+    --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.20);
+  }
+
+  html,
+  body {
+    height: 100%;
+    background-color: var(--surface);
+    color: var(--on-surface);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  /* Material Symbols */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+}
+
+@layer components {
+  /* === GLASS PANEL === */
+  .glass-panel {
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+  }
+
+  .glass-panel-hover {
+    transition: box-shadow var(--duration-quick) var(--ease-quintic-out),
+                border-color var(--duration-quick) var(--ease-quintic-out);
+    box-shadow: var(--glow-primary);
+  }
+
+  .glass-panel-hover:hover {
+    box-shadow: var(--glow-primary-hover);
+    border-color: rgba(211, 214, 176, 0.30);
+  }
+
+  /* === AMBIENT GLOW === */
+  .ambient-glow {
+    box-shadow: 0 0 40px rgba(211, 214, 176, 0.05);
+  }
+
+  .ambient-glow-hover {
+    transition: box-shadow 0.3s var(--ease-quintic-out),
+                border-color 0.3s var(--ease-quintic-out);
+  }
+
+  .ambient-glow-hover:hover {
+    box-shadow: 0 0 60px rgba(211, 214, 176, 0.15);
+    border-color: rgba(211, 214, 176, 0.3);
+  }
+
+  /* === SIDEBAR NAV === */
+  .nav-item-active {
+    color: var(--primary);
+    font-weight: 700;
+    border-right: 2px solid var(--primary);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .nav-item {
+    color: var(--on-surface-variant);
+    transition: all 0.2s var(--ease-quintic-out);
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--on-surface);
+  }
+
+  /* === TOP NAV ITEM === */
+  .top-nav-active {
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+  }
+
+  /* === NODE / BENTO CARD === */
+  .node-card {
+    transition: all 0.3s var(--ease-physics);
+  }
+
+  .node-card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* === TRACE LINE === */
+  .trace-line-container {
+    position: relative;
+  }
+
+  .trace-line-track {
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .trace-line-glow {
+    position: absolute;
+    left: 0;
+    width: 2px;
+    height: 0;
+    background: linear-gradient(to bottom, transparent, #D3D6B0, transparent);
+    animation: traceFlow 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.6;
+  }
+}
+
+@layer utilities {
+  /* === PHYSICS-BASED ENTER === */
+  .animate-enter {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: physicsEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  @keyframes physicsEnter {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* === TRACE FLOW === */
+  @keyframes traceFlow {
+    0% { top: 0; height: 0; opacity: 0; }
+    10% { opacity: 0.6; }
+    50% { height: 100%; top: 0; }
+    90% { opacity: 0.6; }
+    100% { height: 0; top: 100%; opacity: 0; }
+  }
+
+  /* === BLINK CURSOR === */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  /* === PULSE AMBER === */
+  @keyframes pulse-amber {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.95); }
+  }
+  .animate-pulse-amber {
+    animation: pulse-amber 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* === GRID FADE === */
+  @keyframes grid-fade {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+  .animate-grid-fade {
+    animation: grid-fade 4s ease-in-out infinite;
+  }
+
+  /* === TRACE LINE (OLD) === */
+  @keyframes trace-line-flow {
+    0% { transform: translateY(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(100%); opacity: 0; }
+  }
+  .animate-trace-line {
+    animation: trace-line-flow 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  /* === APERTURE WIPE === */
+  .clip-aperture-wipe {
+    clip-path: inset(0%);
+    animation: aperture-wipe 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes aperture-wipe {
+    0% { clip-path: inset(50%); opacity: 0; transform: scale(0.95); }
+    100% { clip-path: inset(0%); opacity: 1; transform: scale(1); }
+  }
+
+  /* === SCANNING LINE (War Room active state) === */
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+  .animate-scanline {
+    animation: scanline 2s linear infinite;
+  }
+
+  /* === CUSTOM SCROLLBAR === */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+  /* === FOCUS RING === */
+  *:focus-visible {
+    outline: 2px solid var(--accent-luminous);
+    outline-offset: 2px;
+  }
+
+  /* === REDUCED MOTION === */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
