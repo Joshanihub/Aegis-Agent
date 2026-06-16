@@ -56,10 +56,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# TODO(production): restrict allow_origins to frontend domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://aegis-agent-kohl.vercel.app",
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
