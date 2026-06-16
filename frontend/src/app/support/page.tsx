@@ -44,7 +44,7 @@ export default function SupportPage() {
                 <ul className="space-y-4 text-sm text-on-surface-variant">
                   <li className="flex gap-3"><span className="text-cyan-agent font-bold">1. Planner:</span> Decomposes the investment thesis into actionable subtasks.</li>
                   <li className="flex gap-3"><span className="text-indigo-init font-bold">2. Analyst:</span> Executes forensic data gathering and synthesis.</li>
-                  <li className="flex gap-3"><span className="text-rose-agent font-bold">3. Reviewer:</span> Conducts adversarial red-teaming against the Analyst's findings. Can force revision loops.</li>
+                  <li className="flex gap-3"><span className="text-rose-agent font-bold">3. Reviewer:</span> Conducts adversarial red-teaming against the Analyst&apos;s findings. Can force revision loops.</li>
                   <li className="flex gap-3"><span className="text-emerald-agent font-bold">4. Finalizer:</span> Compiles the executive dossier and assigns a cryptographically signed risk score.</li>
                 </ul>
               </GlassPanel>
