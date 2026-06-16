@@ -19,11 +19,6 @@ _BACKEND_DIR = Path(__file__).parent.absolute()
 if str(_BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(_BACKEND_DIR))
 
-# Also ensure the current working directory is in sys.path
-_CWD = os.getcwd()
-if _CWD not in sys.path:
-    sys.path.insert(0, _CWD)
-
 load_dotenv(_BACKEND_DIR / ".env")
 
 from api.routes import router  # noqa: E402
