@@ -61,30 +61,29 @@ def load_agent_credentials() -> dict[str, AgentCredentials]:
     settings = get_settings()
     config_path = settings.agent_config_path
 
-    if not config_path.exists():
-        if settings.band_mock_mode:
-            logger.warning("agent_config.yaml not found — using mock agent IDs")
-            return _mock_credentials()
-        raise RuntimeError(
-            f"agent_config.yaml not found at {config_path}. "
-            "Copy agent_config.example.yaml and fill in Band credentials."
-        )
-
-    with config_path.open(encoding="utf-8") as handle:
-        raw = yaml.safe_load(handle) or {}
+    raw = {}
+    if config_path.exists():
+        with config_path.open(encoding="utf-8") as handle:
+            raw = yaml.safe_load(handle) or {}
 
     credentials: dict[str, AgentCredentials] = {}
     for role in ("planner", "analyst", "reviewer", "finalizer"):
         entry = raw.get(role, {})
-        agent_id = entry.get("agent_id", "")
-        api_key = entry.get("api_key", "")
+        # First try YAML, then fallback to environment variables
+        agent_id = entry.get("agent_id") or os.getenv(f"BAND_{role.upper()}_AGENT_ID", "")
+        api_key = entry.get("api_key") or os.getenv(f"BAND_{role.upper()}_API_KEY", "")
+        
         if not agent_id or not api_key:
             if settings.band_mock_mode:
                 credentials[role] = AgentCredentials(
                     agent_id=f"mock-{role}-id", api_key=f"mock-{role}-key"
                 )
             else:
-                raise RuntimeError(f"Missing credentials for agent role: {role}")
+                raise RuntimeError(
+                    f"Missing credentials for agent role '{role}'. "
+                    f"Please provide them in agent_config.yaml or via "
+                    f"BAND_{role.upper()}_AGENT_ID and BAND_{role.upper()}_API_KEY environment variables."
+                )
         else:
             credentials[role] = AgentCredentials(agent_id=agent_id, api_key=api_key)
 
