@@ -29,10 +29,10 @@ class ReviewerAgent:
             f"Analyst Findings:\n{json.dumps(analyst_findings, indent=2)}\n\n"
             f"Score this deal's risk from 0 to 100. 0 is perfectly safe. 100 is catastrophic. Be brutally honest.\n"
             f"Think step by step before answering. "
-            f"Provide a highly detailed, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. Describe adversarial pressure testing, red-teaming the analyst's work, and probing for weaknesses.\n\n"
+            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. Describe adversarial pressure testing, red-teaming the analyst's work, and probing for weaknesses. This log MUST be at least 3-4 paragraphs long.\n\n"
             f"Example output:\n"
             f'{{\n'
-            f'  "internal_audit_log": "[SYSTEM LOG] Initializing adversarial review protocol... [DONE]\\n> Injecting synthetic market shock scenario into Analyst model.\\n> Warning: Analyst missed secondary regulatory exposure in EU market.\\n> Forcing revision cycle on Subtask 1...",\n'
+            f'  "internal_audit_log": "[SYSTEM LOG] Initializing adversarial review protocol... [DONE]\\n\\n> Injecting synthetic market shock scenario into Analyst model. The baseline revenue projections provided by the analyst fail to account for a 20% contraction in consumer spending. I am flagging this as a critical oversight.\\n\\n> Probing deeper into the regulatory findings: The analyst noted compliance, but missed a pending legislative bill in the EU that directly impacts their core data harvesting model. This is unacceptable.\\n\\n> Forcing revision cycle on Subtask 1. The target must prove resilience against these twin vectors. Adjusting risk score to reflect the exposed vulnerabilities...",\n'
             f'  "risk_score": 58,\n'
             f'  "approved": true,\n'
             f'  "critical_issues": [\n'

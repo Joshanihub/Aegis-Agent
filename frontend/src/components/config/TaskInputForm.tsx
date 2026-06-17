@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { AnalysisDepth } from '@/lib/types'
-import { createRoom } from '@/lib/api'
+import { createRoom, uploadFile } from '@/lib/api'
 import { useAegisStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
 import TraceLine from '@/components/ui/TraceLine'
@@ -38,8 +38,12 @@ export default function TaskInputForm() {
   const [companyName, setCompanyName] = useState('')
   const [dealContext, setDealContext] = useState('')
   const [riskTolerance, setRiskTolerance] = useState(60)
+  const [persona, setPersona] = useState('Standard Analyst')
   const [analysisDepth, setAnalysisDepth] = useState<AnalysisDepth>('STANDARD')
-  const [preferredModel, setPreferredModel] = useState('gpt-4o')
+  const [preferredModel, setPreferredModel] = useState(useAegisStore.getState().preferredModel || 'auto')
+
+  const [uploadedFiles, setUploadedFiles] = useState<{file_id: string, filename: string}[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +68,23 @@ export default function TaskInputForm() {
     }
   }, [analysisDepth, companyName, dealContext, riskTolerance])
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files?.length) return
+    
+    setUploading(true)
+    setError(null)
+    try {
+      const file = e.target.files[0]
+      const result = await uploadFile(file)
+      setUploadedFiles(prev => [...prev, result])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload document.')
+    } finally {
+      setUploading(false)
+      if (e.target) e.target.value = ''
+    }
+  }
+
   async function onSubmit() {
     setError(null)
     if (!validation.isValid) {
@@ -79,7 +100,9 @@ export default function TaskInputForm() {
         deal_context: validation.trimmedContext,
         risk_tolerance: riskTolerance,
         analysis_depth: analysisDepth,
+        persona: persona,
         preferred_model: preferredModel,
+        document_ids: uploadedFiles.map(f => f.file_id)
       })
 
       setRoomIdentifiers(res.room_id, res.task_id)
@@ -153,6 +176,63 @@ export default function TaskInputForm() {
       </motion.div>
 
       <motion.div variants={staggerItem}>
+        <label className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2">
+          SUPPORTING DOCUMENTS
+        </label>
+        <div className="relative border border-dashed border-border-subtle rounded-md p-6 bg-surface-container/50 hover:border-accent-luminous/50 hover:bg-surface-container transition-colors">
+          <input
+            type="file"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+            onChange={handleFileUpload}
+            disabled={submitting || uploading}
+            accept=".pdf,.txt,.md,.csv,.doc,.docx"
+          />
+          <div className="flex flex-col items-center justify-center text-center gap-2 pointer-events-none">
+            {uploading ? (
+              <span className="font-mono text-sm text-accent-luminous">UPLOADING...</span>
+            ) : (
+              <>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-on-surface-variant/50">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <p className="font-body text-sm text-on-surface-variant">Click or drag files to attach</p>
+                <p className="font-mono text-[10px] text-text-muted">PDF, TXT, CSV</p>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {uploadedFiles.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {uploadedFiles.map(f => (
+              <div key={f.file_id} className="flex items-center justify-between bg-surface-container py-2 px-3 rounded-md border border-border-subtle/50">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cyan-agent shrink-0">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span className="font-mono text-xs text-on-surface truncate">{f.filename}</span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setUploadedFiles(prev => prev.filter(x => x.file_id !== f.file_id))}
+                  className="text-text-muted hover:text-crimson-reject transition-colors"
+                  disabled={submitting}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      <motion.div variants={staggerItem}>
         <div className="flex items-center justify-between mb-2">
           <label htmlFor="risk_tolerance" className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant">
             RISK TOLERANCE
@@ -200,6 +280,33 @@ export default function TaskInputForm() {
             onChange={(v) => setAnalysisDepth(v as AnalysisDepth)}
           />
           {submitting && <div className="absolute inset-0 bg-surface/50 z-10" />}
+        </div>
+      </motion.div>
+
+      <motion.div variants={staggerItem}>
+        <label htmlFor="persona" className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2">
+          FINALIZER PERSONA
+        </label>
+        <div className="relative">
+          <select
+            id="persona"
+            name="persona"
+            value={persona}
+            onChange={(e) => setPersona(e.target.value)}
+            disabled={submitting || uploading}
+            className="w-full bg-surface-container border border-border-subtle rounded-md py-3 px-4 text-body-md text-on-surface focus:outline-none focus:border-accent-luminous transition-colors appearance-none"
+          >
+            <option value="Standard Analyst">Standard Analyst</option>
+            <option value="Conservative Risk Officer">Conservative Risk Officer</option>
+            <option value="Aggressive Growth Investor">Aggressive Growth Investor</option>
+            <option value="ESG Focused">ESG Focused</option>
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          {(submitting || uploading) && <div className="absolute inset-0 bg-surface/50 rounded-md" />}
         </div>
       </motion.div>
 

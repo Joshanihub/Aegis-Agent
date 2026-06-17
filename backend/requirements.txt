@@ -8,3 +8,5 @@ pytest>=8.0.0
 pytest-asyncio>=0.24.0
 pytest-cov>=5.0.0
 band-sdk>=1.0.0
+PyPDF2>=3.0.0
+python-multipart>=0.0.9

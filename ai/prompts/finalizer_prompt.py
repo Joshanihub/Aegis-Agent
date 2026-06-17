@@ -26,22 +26,22 @@ class FinalizerAgent:
             f"Target Company: {company_name}\n"
             f"Reviewer Output:\n{json.dumps(reviewer_output, indent=2)}\n\n"
             f"Think through each step carefully before producing your final output. "
-            f"Provide a highly detailed, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal.\n\n"
+            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. This log MUST be at least 3-4 paragraphs long, synthesizing the big picture.\n\n"
             f"CRITICAL REQUIREMENTS FOR `executive_summary`:\n"
-            f"The `executive_summary` must be a FULL REPORT written in human-readable language, as if you are presenting to the board of directors.\n"
-            f"Structure it as follows (use these exact headings in your text):\n"
-            f"1. **Overview** — 2-3 sentences explaining what was analyzed and the final verdict.\n"
-            f"2. **Financial Assessment** — Key financial metrics, revenue trends, burn rate, and valuation concerns.\n"
-            f"3. **Risk Analysis** — The critical risks identified, their severity, and potential impact.\n"
-            f"4. **Strategic Position** — The company's competitive moat, market position, and growth trajectory.\n"
-            f"5. **Recommendation** — A clear, decisive final recommendation with specific next steps.\n\n"
-            f"Write each section as a full paragraph. Do NOT use bullet points. Write in flowing, professional prose as a senior analyst would.\n\n"
+            f"The `executive_summary` must be a FULL REPORT written in human-readable language, as if you are presenting to the board of directors. It must be highly detailed and extremely comprehensive.\n"
+            f"Structure it exactly as follows, using these exact bold markdown headings:\n"
+            f"**Overview**\nWrite a rich 4-5 sentence summary of the entire analysis, the strategic intent, and the decisive final verdict.\n\n"
+            f"**Financial Assessment**\nWrite a deep paragraph detailing revenue trends, margins, burn rate, cash runway, and valuation justification.\n\n"
+            f"**Risk Analysis**\nWrite a deep paragraph detailing the critical risks, regulatory threats, and their potential severity/probability.\n\n"
+            f"**Strategic Position**\nWrite a deep paragraph on the company's competitive moat, tech stack, and long-term market trajectory.\n\n"
+            f"**Recommendation**\nWrite a decisive final recommendation with explicit, actionable next steps.\n\n"
+            f"Write each section as a full, detailed paragraph. Do NOT use bullet points in the summary text. Write in flowing, professional prose as a senior investment architect would.\n\n"
             f"If the verdict is 'caution', you MUST include a 'conditions' array listing specific prerequisites the target must meet.\n"
             f"If the verdict is 'caution' or 'reject', include 2-3 specific 'competitive_alternatives'.\n\n"
 
             f"Example output:\n"
             f'{{\n'
-            f'  "internal_audit_log": "[SYSTEM LOG] Aggregating all agent outputs... [DONE]\\n> Reviewer flagged HIGH regulatory risk on Subtask 1.\\n> Analyst confidence at 85% with data gaps in EU market.\\n> Weighting factors... Risk index exceeds threshold. Formulating REJECT verdict...",\n'
+            f'  "internal_audit_log": "[SYSTEM LOG] Aggregating all agent outputs... [DONE]\\n\\n> Reviewer flagged HIGH regulatory risk on Subtask 1. Analyst confidence rests at 85% with notable data gaps in the EU market. The confluence of these vectors indicates a systemic issue.\\n\\n> Weighting financial upside against compliance risks. The cash burn is acceptable, but the moat is vulnerable. Formulating a Caution verdict with strict contingencies.\\n\\n> Writing executive presentation...",\n'
             f'  "historical_context": "Company was founded in 2015, shifted to capped-profit in 2019.",\n'
             f'  "future_path": "Requires massive capital expenditure for compute; path to profitability unclear.",\n'
             f'  "risk_score": 60,\n'

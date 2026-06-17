@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import type { VerdictData } from '@/lib/types'
 import { useAegisStore } from '@/lib/store'
 import DossierCard from '@/components/verdict/DossierCard'
+import CollaborationPanel from '@/components/verdict/CollaborationPanel'
 import { getVerdict, refineAnalysis } from '@/lib/api'
 import { motion } from 'framer-motion'
 import MonoLabel from '@/components/ui/MonoLabel'
@@ -19,6 +20,8 @@ export default function VerdictPage() {
   const taskId = params.task_id
   const verdict = useAegisStore((s: { verdict: VerdictData | null }) => s.verdict)
   const setVerdict = useAegisStore((s: { setVerdict: (v: VerdictData | null) => void }) => s.setVerdict)
+  const companyName = useAegisStore((s) => s.task?.company_name ?? 'Target Company')
+  const roomId = useAegisStore((s) => s.roomId ?? '')
 
   const [refineCriteria, setRefineCriteria] = useState('')
   const [isRefining, setIsRefining] = useState(false)
@@ -61,10 +64,7 @@ export default function VerdictPage() {
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       {/* Fixed Sidebar */}
-      <AegisSidebar onNewAnalysis={() => {
-        useAegisStore.getState().reset()
-        router.push('/config')
-      }} />
+      <AegisSidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 md:ml-[280px] flex flex-col relative h-full">
@@ -85,7 +85,10 @@ export default function VerdictPage() {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="flex flex-col gap-8"
               >
-                <DossierCard verdict={verdict} />
+                <div className="flex justify-end">
+                  <CollaborationPanel roomId={roomId} taskId={taskId} companyName={companyName} />
+                </div>
+                <DossierCard verdict={verdict} companyName={companyName} />
                 
                 {/* Continuous Refinement Panel */}
                 <div className="glass-panel p-8 mt-4 flex flex-col gap-4 border-t-2 border-t-indigo-init relative overflow-hidden group">
@@ -153,10 +156,10 @@ export default function VerdictPage() {
                       Could not fetch the final dossier for this task. The analysis may have failed or the session expired.
                     </p>
                     <button
-                      onClick={() => router.push('/config')}
+                      onClick={() => router.push('/dashboard')}
                       className="px-6 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded text-sm font-mono text-on-surface transition-colors"
                     >
-                      RETURN TO ANALYSIS
+                      RETURN TO DASHBOARD
                     </button>
                   </div>
                 </div>

@@ -27,10 +27,10 @@ class AnalystAgent:
             f"Analyze the provided investment target against each subtask. Be precise, critical, and evidence-based.\n\n"
             f"Subtasks to analyze:\n{json.dumps(subtasks, indent=2)}\n\n"
             f"Think through each step carefully before producing your final output. "
-            f"Provide a highly detailed, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. Describe fetching data, cross-referencing, and uncovering anomalies.\n\n"
+            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. Describe fetching data, cross-referencing, uncovering anomalies, and deducing facts. This log MUST be at least 3-4 paragraphs long.\n\n"
             f"Example output:\n"
             f'{{\n'
-            f'  "internal_audit_log": "[SYSTEM LOG] Fetching SEC filings... [DONE]\\n> Cross-referencing Q3 revenue with industry benchmarks... anomaly detected.\\n> Scraping regulatory dockets for litigation risk... [WARNING] Match found.\\n> Synthesizing findings for Reviewer...",\n'
+            f'  "internal_audit_log": "[SYSTEM LOG] Fetching SEC filings and live market data... [DONE]\\n\\n> Initiating deep-dive correlation matrix across Q3 revenue and industry benchmarks. Instantly detecting a divergence in margin expansion versus peer median.\\n\\n> Scraping regulatory dockets for litigation risk... [WARNING] Match found regarding pending intellectual property disputes in the EMEA region. This could severely impact forward-looking EV multiples.\\n\\n> Synthesizing these granular findings into a coherent risk profile. The evidence strongly suggests hidden liabilities. Packaging raw telemetry for Reviewer override...",\n'
             f'  "findings": [\n'
             f'    {{\n'
             f'      "subtask_id": "1",\n'

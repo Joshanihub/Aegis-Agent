@@ -8,11 +8,14 @@ interface InterventionDrawerProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (guidance: string) => Promise<void>
+  title?: string
+  description?: string
 }
 
-export default function InterventionDrawer({ isOpen, onClose, onSubmit }: InterventionDrawerProps) {
+export default function InterventionDrawer({ isOpen, onClose, onSubmit, title, description }: InterventionDrawerProps) {
   const [guidance, setGuidance] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isMandatory = !!description  // Forced HITL — user MUST respond
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,8 +41,8 @@ export default function InterventionDrawer({ isOpen, onClose, onSubmit }: Interv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-surface/80 backdrop-blur-sm z-40"
+            onClick={isMandatory ? undefined : onClose}
+            className={`fixed inset-0 bg-surface/80 backdrop-blur-sm z-40 ${isMandatory ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           />
           <motion.div
             initial={{ x: '100%' }}
@@ -50,23 +53,35 @@ export default function InterventionDrawer({ isOpen, onClose, onSubmit }: Interv
           >
             <div className="p-6 border-b border-border-subtle flex justify-between items-center">
               <div>
-                <MonoLabel className="text-primary text-xs tracking-widest mb-1">USER OVERRIDE</MonoLabel>
-                <h2 className="font-headline text-lg font-bold text-on-surface">Agent Intervention</h2>
+                <MonoLabel className={`text-xs tracking-widest mb-1 ${isMandatory ? 'text-rose-agent' : 'text-primary'}`}>
+                  {isMandatory ? '⚠ MANDATORY REVIEW' : 'USER OVERRIDE'}
+                </MonoLabel>
+                <h2 className="font-headline text-lg font-bold text-on-surface">{title || "Agent Intervention"}</h2>
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded bg-surface-container hover:bg-surface border border-border-subtle text-on-surface-variant hover:text-on-surface transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+              {!isMandatory && (
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 flex items-center justify-center rounded bg-surface-container hover:bg-surface border border-border-subtle text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto">
-              <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
-                Provide mid-flight guidance to the agent swarm. Your instructions will be injected into the shared deal context and processed during the next reasoning cycle.
+              {isMandatory && (
+                <div className="mb-5 p-3 rounded-lg bg-rose-agent/10 border border-rose-agent/30 flex items-start gap-2">
+                  <svg className="shrink-0 mt-0.5 text-rose-agent" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <p className="text-[11px] font-mono text-rose-agent leading-relaxed">
+                    The workflow is paused. You must submit directives before the analysis can continue.
+                  </p>
+                </div>
+              )}
+              <p className="text-sm text-on-surface-variant mb-6 leading-relaxed whitespace-pre-wrap">
+                {description || "Provide mid-flight guidance to the agent swarm. Your instructions will be injected into the shared deal context and processed during the next reasoning cycle."}
               </p>
 
               <form id="intervention-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -87,13 +102,15 @@ export default function InterventionDrawer({ isOpen, onClose, onSubmit }: Interv
             </div>
 
             <div className="p-6 border-t border-border-subtle bg-surface-container/50 flex gap-3">
-              <button
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="flex-1 py-3 border border-border-subtle rounded text-sm font-mono text-on-surface-variant hover:text-on-surface hover:bg-surface transition-colors disabled:opacity-50"
-              >
-                CANCEL
-              </button>
+              {!isMandatory && (
+                <button
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 border border-border-subtle rounded text-sm font-mono text-on-surface-variant hover:text-on-surface hover:bg-surface transition-colors disabled:opacity-50"
+                >
+                  CANCEL
+                </button>
+              )}
               <button
                 type="submit"
                 form="intervention-form"

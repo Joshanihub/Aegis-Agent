@@ -7,6 +7,6 @@ import AgentGrid from '../AgentGrid'
 
 describe('AgentGrid', () => {
   it('renders without crashing', () => {
-    render(<AgentGrid {...{ agents: [] }} />)
+    render(<AgentGrid agents={[]} messages={[]} />)
   })
 })

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -18,6 +19,12 @@ WsBroadcast = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 _tasks: dict[str, TaskState] = {}
 _verdicts: dict[str, VerdictData] = {}
 _ws_connections: dict[str, list[Any]] = {}
+_intervention_events: dict[str, asyncio.Event] = {}
+
+def get_intervention_event(task_id: str) -> asyncio.Event:
+    if task_id not in _intervention_events:
+        _intervention_events[task_id] = asyncio.Event()
+    return _intervention_events[task_id]
 
 
 def save_state() -> None:

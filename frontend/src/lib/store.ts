@@ -8,6 +8,7 @@ type AegisIdentifiers = {
   roomId: string | null
   taskId: string | null
   recentSessions: { taskId: string; companyName: string; timestamp: string }[]
+  preferredModel: string
 }
 
 type AegisSnapshot = {
@@ -25,14 +26,18 @@ type WsError = {
 type AegisStore = AegisIdentifiers & AegisSnapshot & {
   roomStatus: ConnectionStatus
   wsError: WsError
+  humanInputRequired: string | null
   initializeFromSnapshot: (snapshot: Omit<AegisSnapshot, 'task'> & { task: TaskState }) => void
   applyBandMessage: (msg: BandMessage) => void
   applyAgentStatusChanged: (event: { agent_id: string; status: string; last_action?: string; api_used?: string }) => void
   setVerdict: (verdict: VerdictData | null) => void
   setConnectionStatus: (status: ConnectionStatus) => void
   setWsError: (err: { message: string; recoverable: boolean } | null) => void
+  setHumanInputRequired: (msg: string | null) => void
   reset: () => void
+  clearSessions: () => void
   setRoomIdentifiers: (roomId: string, taskId: string) => void
+  setPreferredModel: (model: string) => void
 }
 
 const initialSnapshot: AegisSnapshot = {
@@ -48,9 +53,11 @@ export const useAegisStore = create<AegisStore>()(
       roomId: null,
       taskId: null,
       recentSessions: [],
+      preferredModel: 'auto',
       ...initialSnapshot,
       roomStatus: 'disconnected',
       wsError: null,
+      humanInputRequired: null,
 
       setRoomIdentifiers: (roomId, taskId) =>
         set(() => ({
@@ -114,22 +121,31 @@ export const useAegisStore = create<AegisStore>()(
 
       setConnectionStatus: (status) => set(() => ({ roomStatus: status })),
       setWsError: (err) => set(() => ({ wsError: err })),
+      setHumanInputRequired: (msg) => set(() => ({ humanInputRequired: msg })),
 
       reset: () =>
-        set(() => ({
+        set((state) => ({
           roomId: null,
           taskId: null,
           ...initialSnapshot,
           roomStatus: 'disconnected',
           wsError: null,
+          humanInputRequired: null,
         })),
+
+      clearSessions: () =>
+        set(() => ({ recentSessions: [] })),
+
+      setPreferredModel: (model) =>
+        set(() => ({ preferredModel: model })),
     }),
     {
       name: 'aegis-session-storage',
       partialize: (state) => ({ 
         roomId: state.roomId, 
         taskId: state.taskId,
-        recentSessions: state.recentSessions || []
+        recentSessions: state.recentSessions || [],
+        preferredModel: state.preferredModel
       }),
     }
   )

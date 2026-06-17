@@ -66,4 +66,18 @@ export async function refineAnalysis(taskId: string, newCriteria: string): Promi
   return payload as { status: string, task_id: string }
 }
 
+export async function uploadFile(file: File): Promise<{ file_id: string; filename: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${BASE_URL}/api/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  const payload: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) throwApiError(payload)
+  return payload as { file_id: string; filename: string }
+}
+
 export type { AnalysisDepth }

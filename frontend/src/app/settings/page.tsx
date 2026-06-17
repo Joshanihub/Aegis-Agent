@@ -1,23 +1,20 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import AegisSidebar from '@/components/ui/AegisSidebar'
 import AegisTopBar from '@/components/ui/AegisTopBar'
 import GlassPanel from '@/components/ui/GlassPanel'
 import MonoLabel from '@/components/ui/MonoLabel'
+import Footer from '@/components/ui/Footer'
 import { useAegisStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 
 export default function SettingsPage() {
-  const router = useRouter()
-  const taskId = useAegisStore(s => s.taskId)
+  const preferredModel = useAegisStore(s => s.preferredModel)
+  const setPreferredModel = useAegisStore(s => s.setPreferredModel)
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
-      <AegisSidebar onNewAnalysis={() => {
-        useAegisStore.getState().reset()
-        router.push('/config')
-      }} />
+      <AegisSidebar />
 
       <div className="flex-1 md:ml-[280px] flex flex-col relative h-full">
         <AegisTopBar title="Settings" subtitle="System Preferences" status="idle" />
@@ -65,23 +62,30 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-surface-container-low border border-border-subtle rounded-lg">
                     <div>
-                      <h4 className="font-semibold text-on-surface text-sm">Reviewer & Analyst Nodes</h4>
-                      <p className="text-xs text-on-surface-variant mt-1">Primary inference engines for data synthesis and adversarial review.</p>
+                      <h4 className="font-semibold text-on-surface text-sm">Global Inference Model</h4>
+                      <p className="text-xs text-on-surface-variant mt-1">Select the preferred model for analysis tasks. Default is auto-routing.</p>
                     </div>
-                    <select className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" defaultValue="featherless">
-                      <option value="featherless">Featherless AI (Mistral-7B)</option>
-                      <option value="aiml">AI/ML API (GPT-4o)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-surface-container-low border border-border-subtle rounded-lg">
-                    <div>
-                      <h4 className="font-semibold text-on-surface text-sm">Planner & Finalizer Nodes</h4>
-                      <p className="text-xs text-on-surface-variant mt-1">Orchestration and final verdict compilation engines.</p>
-                    </div>
-                    <select className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" defaultValue="aiml">
-                      <option value="aiml">AI/ML API (GPT-4o)</option>
-                      <option value="featherless">Featherless AI (Mistral-7B)</option>
+                    <select 
+                      className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" 
+                      value={preferredModel}
+                      onChange={(e) => setPreferredModel(e.target.value)}
+                    >
+                      <option value="auto">Auto Route (Optimized)</option>
+                      <optgroup label="AI/ML API Models">
+                        <option value="gpt-4o">GPT-4o (Default)</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                      </optgroup>
+                      <optgroup label="Featherless AI Models">
+                        <option value="mistral-7b">Mistral 7B Instruct</option>
+                        <option value="meta-llama/Meta-Llama-3-8B-Instruct">Llama 3 (8B)</option>
+                        <option value="meta-llama/Meta-Llama-3-70B-Instruct">Llama 3 (70B)</option>
+                        <option value="Qwen/Qwen2-72B-Instruct">Qwen2 (72B)</option>
+                      </optgroup>
                     </select>
                   </div>
                 </div>
@@ -114,6 +118,7 @@ export default function SettingsPage() {
 
             </motion.div>
           </div>
+          <Footer />
         </main>
       </div>
     </div>

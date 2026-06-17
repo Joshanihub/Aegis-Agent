@@ -92,7 +92,9 @@ class TaskInput(BaseModel):
     deal_context: str = Field(min_length=10)
     risk_tolerance: int = Field(ge=0, le=100)
     analysis_depth: AnalysisDepth
+    persona: str = "Standard Analyst"
     preferred_model: str = "gpt-4o"
+    document_ids: list[str] = Field(default_factory=list)
 
 
 class CreateRoomResponse(BaseModel):
@@ -121,12 +123,20 @@ class ReasoningStep(BaseModel):
     reasoning: Optional[str] = None
 
 
+class Citation(BaseModel):
+    id: str
+    source_document: str
+    snippet: str
+    relevance: str
+
+
 class VerdictData(BaseModel):
     risk_score: int
     verdict: VerdictType
     summary: str
     vulnerabilities: list[Vulnerability]
     reasoning_chain: list[ReasoningStep]
+    citations: list[Citation] = Field(default_factory=list)
     historical_context: Optional[str] = None
     future_path: Optional[str] = None
     competitive_alternatives: Optional[list[str]] = None
@@ -145,7 +155,9 @@ class TaskState(BaseModel):
     deal_context: str
     risk_tolerance: int
     analysis_depth: str
+    persona: str = "Standard Analyst"
     preferred_model: str = "gpt-4o"
+    document_ids: list[str] = Field(default_factory=list)
     status: TaskStatus
     current_agent: Optional[str] = None
     cycle_count: int = Field(default=0, ge=0)

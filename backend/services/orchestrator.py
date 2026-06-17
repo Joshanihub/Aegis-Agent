@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Coroutine
+from pathlib import Path
+import PyPDF2
 
 from models.schemas import (
     AgentStatus,
@@ -41,6 +43,44 @@ class AgentError(Exception):
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _extract_text_from_documents(document_ids: list[str]) -> str:
+    if not document_ids:
+        return ""
+    
+    extracted_texts = []
+    upload_dir = Path("data/uploads")
+    
+    for file_id in document_ids:
+        matched_files = list(upload_dir.glob(f"{file_id}_*"))
+        if not matched_files:
+            continue
+            
+        file_path = matched_files[0]
+        text_content = ""
+        
+        try:
+            if file_path.suffix.lower() == ".pdf":
+                with open(file_path, "rb") as f:
+                    reader = PyPDF2.PdfReader(f)
+                    for page in reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text_content += page_text + "\n"
+            else:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    text_content = f.read()
+                    
+            if text_content:
+                extracted_texts.append(f"--- Document: {file_path.name} ---\n{text_content[:20000]}")
+        except Exception as e:
+            logger.warning("Failed to extract text from %s: %s", file_path, e)
+            
+    if not extracted_texts:
+        return ""
+        
+    return "\n\n" + "\n\n".join(extracted_texts)
 
 
 def _update_agent_status(
@@ -204,10 +244,15 @@ async def run_workflow(
             "deal_context": task.deal_context,
             "risk_tolerance": task.risk_tolerance,
             "analysis_depth": task.analysis_depth,
+            "persona": getattr(task, "persona", "Standard Analyst"),
             "preferred_model": getattr(task, "preferred_model", "gpt-4o"),
             "task_id": task_id,
             "room_id": room_id,
         }
+
+        doc_context = _extract_text_from_documents(getattr(task, "document_ids", []))
+        if doc_context:
+            base_input["deal_context"] += f"\n\n[UPLOADED DOCUMENTS EXTRACTED CONTEXT]:\n{doc_context}"
 
         # --- Context Compression (If refining an existing task) ---
         if len(task.messages) > 0:
@@ -351,11 +396,33 @@ async def run_workflow(
             if reviewer_msg.status != "needs-review":
                 break
 
+            feedback = reviewer_msg.output.data.get("feedback_to_analyst", "Findings require human oversight.")
+            risk_score = reviewer_msg.output.data.get("risk_score", 50)
+
+            # Only pause for high-risk findings
+            if risk_score >= 65:
+                # --- Human-in-the-Loop Pause ---
+                await _emit_agent_status(
+                    task, "reviewer", AgentStatus.AWAITING, "Awaiting human intervention", ws_broadcast
+                )
+                await ws_broadcast({
+                    "type": "human_input_required", 
+                    "message": f"The Reviewer agent has flagged findings that require your oversight before proceeding.\n\nRISK SCORE: {risk_score}\nFLAGGED CONTEXT:\n{feedback}"
+                })
+                
+                intervention_event = task_registry.get_intervention_event(task_id)
+                intervention_event.clear()
+                await intervention_event.wait()
+                
+                await _emit_agent_status(
+                    task, "reviewer", AgentStatus.PROCESSING, "Resuming after intervention", ws_broadcast
+                )
+                # --------------------------------
+            
             task.cycle_count += 1
             if task.cycle_count >= MAX_REVIEW_CYCLES:
                 break
 
-            feedback = reviewer_msg.output.data.get("feedback_to_analyst", "")
             analyst_input = {
                 **analyst_input,
                 "reviewer_feedback": feedback,

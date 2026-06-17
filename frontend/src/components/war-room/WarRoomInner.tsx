@@ -40,6 +40,8 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
     applyAgentStatusChanged,
     setVerdict,
     setRoomIdentifiers,
+    humanInputRequired,
+    setHumanInputRequired,
   } = useAegisStore()
 
   const [isInterventionOpen, setIsInterventionOpen] = useState(false)
@@ -69,6 +71,8 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
       throw new Error('Failed to inject guidance')
     }
     addToast('Guidance Injected', 'success', 'Directives successfully appended to the deal context.')
+    setHumanInputRequired(null)
+    setIsInterventionOpen(false)
   }
 
   // Hydrate store from REST if navigating directly to this URL
@@ -91,10 +95,12 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
     })()
   }, [taskId])
 
-  // WebSocket connection lifecycle
+  // WebSocket connection lifecycle — closed flag prevents React StrictMode double-fire
   useEffect(() => {
+    let closed = false
     const client = new BandClient(taskId, {
       onSnapshot: (snapshot) => {
+        if (closed) return
         initializeFromSnapshot({
           task: snapshot.task,
           agents: snapshot.agents,
@@ -105,6 +111,7 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
         setWsError(null)
       },
       onAgentStatusChanged: (event) => {
+        if (closed) return
         applyAgentStatusChanged({
           agent_id: event.agent_id,
           status: event.status,
@@ -115,21 +122,26 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
         }
       },
       onBandMessage: (event) => {
+        if (closed) return
         applyBandMessage(event.message)
       },
       onVerdictReady: (event) => {
+        if (closed) return
         setVerdict(event.verdict)
         addToast('Verdict Compiled', 'success', 'The Finalizer has completed the analysis.')
         router.push(`/verdict/${encodeURIComponent(taskId)}`)
       },
       onError: (event) => {
+        if (closed) return
         setConnectionStatus('error')
         setWsError({ message: event.message, recoverable: event.recoverable })
       },
       onConnectionStatusChange: (status) => {
+        if (closed) return
         setConnectionStatus(status)
       },
       onUserIntervention: (guidance) => {
+        if (closed) return
         applyBandMessage({
           owner: 'system',
           task: 'System Intervention',
@@ -146,12 +158,19 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
           }
         })
       },
+      onHumanInputRequired: (event) => {
+        if (closed) return
+        setHumanInputRequired(event.message)
+        setIsInterventionOpen(true)
+        addToast('⚠ Human Input Required', 'warning', 'The Reviewer flagged high-risk findings. Your oversight is needed before the analysis continues.')
+      },
     })
 
     setConnectionStatus('connecting')
     client.connect()
 
     return () => {
+      closed = true
       client.close()
     }
   }, [taskId])
@@ -159,7 +178,7 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
   // Fatal WS error → back to config
   useEffect(() => {
     if (roomStatus === 'error' && wsError && !wsError.recoverable) {
-      router.replace('/config')
+      router.replace('/dashboard')
     }
   }, [roomStatus, wsError])
 
@@ -168,10 +187,7 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       {/* Fixed Sidebar */}
-      <AegisSidebar onNewAnalysis={() => {
-        useAegisStore.getState().reset()
-        router.push('/config')
-      }} />
+      <AegisSidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 md:ml-[280px] flex flex-col relative h-full">
@@ -225,7 +241,15 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
             </section>
 
             <NotificationToast toasts={toasts} onDismiss={removeToast} />
-            <InterventionDrawer isOpen={isInterventionOpen} onClose={() => setIsInterventionOpen(false)} onSubmit={handleInterventionSubmit} />
+            <InterventionDrawer 
+              isOpen={isInterventionOpen || !!humanInputRequired} 
+              onClose={() => {
+                if (!humanInputRequired) setIsInterventionOpen(false)
+              }} 
+              onSubmit={handleInterventionSubmit} 
+              title={humanInputRequired ? "Reviewer Flagged High-Risk Findings" : "Inject Directives"}
+              description={humanInputRequired ?? undefined}
+            />
 
             <AnimatePresence mode="wait">
               {task ? (
@@ -237,9 +261,12 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
                   className="grid grid-cols-1 xl:grid-cols-12 gap-8"
                 >
                   <div className="xl:col-span-8 flex flex-col gap-8 min-w-0">
-                    <AgentGrid agents={agents} />
+                    <AgentGrid agents={agents} messages={messages} />
                     <div className="flex-1 min-h-[500px]">
-                      <TerminalStream messages={messages} />
+                      <TerminalStream
+                        messages={messages}
+                        activeOwner={agents.find(a => a.status === 'processing')?.agent_id ?? (messages.length > 0 ? messages[messages.length - 1].owner : null)}
+                      />
                     </div>
                   </div>
                   

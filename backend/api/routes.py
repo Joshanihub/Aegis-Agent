@@ -5,8 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Any
+import uuid
+import shutil
+from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from pydantic import ValidationError
 
 from config import get_settings
@@ -40,6 +43,19 @@ async def _execute_workflow(task: TaskState) -> None:
 @router.get("/health")
 async def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
+    file_id = str(uuid.uuid4())
+    upload_dir = Path("data/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_path = upload_dir / f"{file_id}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"file_id": file_id, "filename": file.filename or "unknown"}
 
 
 @router.post("/api/rooms/create", response_model=CreateRoomResponse)
@@ -91,6 +107,9 @@ async def intervene(task_id: str, body: InterveneInput) -> dict[str, str]:
         "type": "user_intervention",
         "guidance": body.guidance
     })
+    
+    event = task_registry.get_intervention_event(task_id)
+    event.set()
     
     return {"status": "ok"}
 

@@ -78,12 +78,20 @@ export interface ReasoningStep {
   reasoning?: string
 }
 
+export interface Citation {
+  id: string
+  source_document: string
+  snippet: string
+  relevance: string
+}
+
 export interface VerdictData {
   risk_score: number
   verdict: VerdictType
   summary: string
   vulnerabilities: Vulnerability[]
   reasoning_chain: ReasoningStep[]
+  citations?: Citation[]
   historical_context?: string
   future_path?: string
   competitive_alternatives?: string[]
@@ -95,7 +103,9 @@ export interface CreateRoomRequest {
   deal_context: string
   risk_tolerance: number
   analysis_depth: AnalysisDepth
+  persona?: string
   preferred_model?: string
+  document_ids?: string[]
 }
 
 export interface CreateRoomResponse {
@@ -132,4 +142,9 @@ export interface WsErrorEvent {
   type: 'error'
   message: string
   recoverable: boolean
+}
+
+export interface HumanInputRequiredEvent {
+  type: 'human_input_required'
+  message: string
 }

@@ -1,23 +1,18 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import AegisSidebar from '@/components/ui/AegisSidebar'
 import AegisTopBar from '@/components/ui/AegisTopBar'
 import GlassPanel from '@/components/ui/GlassPanel'
 import MonoLabel from '@/components/ui/MonoLabel'
+import Footer from '@/components/ui/Footer'
 import { useAegisStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 
 export default function SupportPage() {
-  const router = useRouter()
-  const taskId = useAegisStore(s => s.taskId)
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
-      <AegisSidebar onNewAnalysis={() => {
-        useAegisStore.getState().reset()
-        router.push('/config')
-      }} />
+      <AegisSidebar />
 
       <div className="flex-1 md:ml-[280px] flex flex-col relative h-full">
         <AegisTopBar title="Support & Documentation" subtitle="System Reference" status="idle" />
@@ -79,6 +74,7 @@ export default function SupportPage() {
 
             </motion.div>
           </div>
+          <Footer />
         </main>
       </div>
     </div>

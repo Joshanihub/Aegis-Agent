@@ -7,6 +7,6 @@ import MessageBlock from '../MessageBlock'
 
 describe('MessageBlock', () => {
   it('renders without crashing', () => {
-    render(<MessageBlock {...{ m: { owner: 'planner', task: 't', context: 'c', action: 'a', output: { data: {}, confidence: 100, reasoning: 'r', api_used: '' }, status: 'ok', next_handoff: null, metadata: {} }, isBlurred: false }} />)
+    render(<MessageBlock m={{ owner: 'planner', task: 't', context: 'c', action: 'a', output: { data: {}, confidence: 100, reasoning: 'r', api_used: '' }, status: 'ok', next_handoff: null, metadata: {} }} isLatest={false} index={0} />)
   })
 })

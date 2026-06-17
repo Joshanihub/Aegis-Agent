@@ -30,10 +30,10 @@ class PlannerAgent:
             f"Risk Tolerance: {risk_tolerance}/100\n"
             f"Analysis Depth: {analysis_depth}\n\n"
             f"Think step by step before answering. Decompose the company/deal into 4-6 structured analysis subtasks. "
-            f"Provide a highly detailed, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal.\n\n"
+            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. This log MUST be at least 3-4 paragraphs long, detailing every assumption, risk vector, and strategic angle you considered.\n\n"
             f"Example output:\n"
             f'{{\n'
-            f'  "internal_audit_log": "[SYSTEM LOG] Establishing encrypted connection... [100%]\\n> Analyzing deal parameters for target.\\n> Decomposing into core risk vectors: Financials, Regulatory, Tech.\\n> Structuring 4 subtasks for immediate deployment...",\n'
+            f'  "internal_audit_log": "[SYSTEM LOG] Establishing encrypted connection... [100%]\\n\\n> Initiating deep strategic decomposition of target parameters. Initial scan reveals several multi-layered risk vectors spanning across financials, regulatory constraints, and emerging technological dependencies.\\n\\n> Drilling down into financial structures: Considering the requested analysis depth, it is imperative we audit revenue sustainability against macroeconomic headwinds. I am setting a priority flag on gross margin compression.\\n\\n> Constructing 4 discrete deployment subtasks for the intelligence committee. Prioritizing regulatory compliance first due to recent shifts in anti-trust laws, followed by quantitative health...",\n'
             f'  "subtasks": [\n'
             f'    {{\n'
             f'      "id": "1",\n'
