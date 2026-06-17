@@ -27,7 +27,7 @@ export default function ReasoningChain({ steps, citations }: ReasoningChainProps
       <div className="flex items-center gap-2 mb-2">
         <MonoLabel className="text-on-surface-variant flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 8V4H8"/><path d="M16 12h4v-4h-4"/><path d="M8 16H4v4h4"/><path d="M12 20v-4h4"/><circle cx="12" cy="12" r="2"/>
+            <path d="M12 8V4H8" /><path d="M16 12h4v-4h-4" /><path d="M8 16H4v4h4" /><path d="M12 20v-4h4" /><circle cx="12" cy="12" r="2" />
           </svg>
           REASONING CHAIN
         </MonoLabel>
@@ -106,14 +106,14 @@ export default function ReasoningChain({ steps, citations }: ReasoningChainProps
                   onClick={() => setActiveCitation(null)}
                   className="text-on-surface-variant hover:text-on-surface"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               </div>
-              
+
               <div className="bg-surface border border-border-subtle rounded p-4 mb-4 font-mono text-sm text-on-surface-variant">
-                "{activeCitation.snippet}"
+                {"\""}{activeCitation.snippet}{"\""}
               </div>
-              
+
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-on-surface-variant/60 block mb-1">Relevance</span>
                 <p className="text-sm font-body text-on-surface/90">
