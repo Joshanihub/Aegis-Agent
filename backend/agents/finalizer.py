@@ -31,29 +31,70 @@ class FinalizerAgentWrapper(BaseAgent):
 
         reviewer = input_data.get("reviewer_output", {})
         reviewer_data = reviewer.get("output", {}).get("data", {})
-        risk_score = reviewer_data.get("risk_score", 58)
+        reviewer_risk_score = reviewer_data.get("risk_score", 50)
         critical_issues = reviewer_data.get("critical_issues", [])
 
+        # Get all agent messages to synthesize a more accurate risk score
+        all_messages = input_data.get("all_messages", [])
+
+        # Aggregate risk signals from all agents
+        total_risk = 0
+        agent_count = 0
+        high_severity_count = 0
+
+        for msg in all_messages:
+            msg_data = msg.get("output", {}).get("data", {}) if isinstance(msg, dict) else {}
+
+            # Extract findings from analyst
+            findings = msg_data.get("findings", [])
+            for finding in findings:
+                if isinstance(finding, dict):
+                    risk_severity = finding.get("risk_severity", "MEDIUM")
+                    if risk_severity == "HIGH":
+                        high_severity_count += 1
+                        total_risk += 75
+                    elif risk_severity == "MEDIUM":
+                        total_risk += 50
+                    else:
+                        total_risk += 25
+                    agent_count += 1
+
+            # Use reviewer's assessment as baseline
+            if msg.get("owner") == "reviewer":
+                msg_risk = msg_data.get("risk_score", 50)
+                total_risk += msg_risk
+                agent_count += 1
+
+        # Calculate synthesized risk score
+        if agent_count > 0:
+            final_risk_score = int(total_risk / agent_count)
+        else:
+            final_risk_score = reviewer_risk_score
+
+        # Ensure high-severity issues are reflected in the score
+        if high_severity_count > 0:
+            final_risk_score = max(final_risk_score, 55)
+
+        # Determine verdict based on actual risk score
         persona = input_data.get("persona", "Standard Analyst")
-        
-        # Adjust verdict based on persona
+
         if persona == "Conservative Risk Officer":
-            risk_score = min(100, risk_score + 15)
-            if risk_score <= 25: verdict = "approve"
-            elif risk_score <= 50: verdict = "caution"
+            adjusted_risk = min(100, final_risk_score + 15)
+            if adjusted_risk <= 25: verdict = "approve"
+            elif adjusted_risk <= 50: verdict = "caution"
             else: verdict = "reject"
         elif persona == "Aggressive Growth Investor":
-            risk_score = max(0, risk_score - 15)
-            if risk_score <= 50: verdict = "approve"
-            elif risk_score <= 80: verdict = "caution"
+            adjusted_risk = max(0, final_risk_score - 15)
+            if adjusted_risk <= 50: verdict = "approve"
+            elif adjusted_risk <= 80: verdict = "caution"
             else: verdict = "reject"
         elif persona == "ESG Focused":
-            if risk_score <= 33: verdict = "approve"
-            elif risk_score <= 66: verdict = "caution"
+            if final_risk_score <= 33: verdict = "approve"
+            elif final_risk_score <= 66: verdict = "caution"
             else: verdict = "reject"
         else: # Standard Analyst
-            if risk_score <= 33: verdict = "approve"
-            elif risk_score <= 66: verdict = "caution"
+            if final_risk_score <= 33: verdict = "approve"
+            elif final_risk_score <= 66: verdict = "caution"
             else: verdict = "reject"
 
         company = input_data.get("company_name", "Target Company")
@@ -70,7 +111,7 @@ class FinalizerAgentWrapper(BaseAgent):
             context="Final investment committee verdict",
             action="Executive dossier compiled",
             output_data={
-                "risk_score": risk_score,
+                "risk_score": final_risk_score,
                 "verdict": verdict,
                 "executive_summary": (
                     "**Overview**\nAfter a comprehensive forensic audit and cross-functional analysis, the committee recommends proceeding with caution. The target demonstrates robust initial traction and an expanding market footprint; however, there are severe, underestimated regulatory impacts and looming financial liabilities regarding their compute expenditure that must be immediately addressed.\n\n"

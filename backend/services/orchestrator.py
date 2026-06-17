@@ -48,18 +48,18 @@ def _now() -> datetime:
 def _extract_text_from_documents(document_ids: list[str]) -> str:
     if not document_ids:
         return ""
-    
+
     extracted_texts = []
     upload_dir = Path("data/uploads")
-    
+
     for file_id in document_ids:
         matched_files = list(upload_dir.glob(f"{file_id}_*"))
         if not matched_files:
             continue
-            
+
         file_path = matched_files[0]
         text_content = ""
-        
+
         try:
             if file_path.suffix.lower() == ".pdf":
                 with open(file_path, "rb") as f:
@@ -71,15 +71,15 @@ def _extract_text_from_documents(document_ids: list[str]) -> str:
             else:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     text_content = f.read()
-                    
+
             if text_content:
                 extracted_texts.append(f"--- Document: {file_path.name} ---\n{text_content[:20000]}")
         except Exception as e:
             logger.warning("Failed to extract text from %s: %s", file_path, e)
-            
+
     if not extracted_texts:
         return ""
-        
+
     return "\n\n" + "\n\n".join(extracted_texts)
 
 
@@ -254,25 +254,26 @@ async def run_workflow(
         if doc_context:
             base_input["deal_context"] += f"\n\n[UPLOADED DOCUMENTS EXTRACTED CONTEXT]:\n{doc_context}"
 
-        # --- Context Compression (If refining an existing task) ---
-        if len(task.messages) > 0:
+        # --- Context Compression (Only if refining an existing task) ---
+        # Only run compressor if this is a refinement (indicated by [REFINEMENT CRITERIA] in deal_context)
+        if "[REFINEMENT CRITERIA]:" in task.deal_context and len(task.messages) > 0:
             from agents.compressor import CompressorAgent
             compressor = CompressorAgent()
-            
+
             await _emit_agent_status(
                 task, "planner", AgentStatus.PROCESSING, "Compressing historical context...", ws_broadcast
             )
-            
+
             compressor_input = {
                 "task_id": task_id,
                 "messages": [m.model_dump() for m in task.messages],
                 "new_criteria": task.deal_context.split("[REFINEMENT CRITERIA]:")[-1].strip() if "[REFINEMENT CRITERIA]:" in task.deal_context else ""
             }
-            
+
             compressor_msg = await _run_agent_with_retry(
                 compressor, compressor_input, "compressor", task_id, ws_broadcast
             )
-            
+
             if compressor_msg.status != "error":
                 # Use the compressed context instead of the full deal context to save tokens
                 compressed_ctx = compressor_msg.output.data.get("compressed_context", "")
@@ -288,7 +289,7 @@ async def run_workflow(
         # --- Planner ---
         t = task_registry.get_task(task_id)
         if t: base_input["deal_context"] = t.deal_context
-        
+
         task.status = TaskStatus.PLANNING
         task.current_agent = "planner"
         task_registry.update_task(task)
@@ -355,7 +356,7 @@ async def run_workflow(
             # Reviewer
             t = task_registry.get_task(task_id)
             if t: base_input["deal_context"] = t.deal_context
-            
+
             task.status = TaskStatus.REVIEWING
             task.current_agent = "reviewer"
             task_registry.update_task(task)
@@ -406,19 +407,19 @@ async def run_workflow(
                     task, "reviewer", AgentStatus.AWAITING, "Awaiting human intervention", ws_broadcast
                 )
                 await ws_broadcast({
-                    "type": "human_input_required", 
+                    "type": "human_input_required",
                     "message": f"The Reviewer agent has flagged findings that require your oversight before proceeding.\n\nRISK SCORE: {risk_score}\nFLAGGED CONTEXT:\n{feedback}"
                 })
-                
+
                 intervention_event = task_registry.get_intervention_event(task_id)
                 intervention_event.clear()
                 await intervention_event.wait()
-                
+
                 await _emit_agent_status(
                     task, "reviewer", AgentStatus.PROCESSING, "Resuming after intervention", ws_broadcast
                 )
                 # --------------------------------
-            
+
             task.cycle_count += 1
             if task.cycle_count >= MAX_REVIEW_CYCLES:
                 break
@@ -442,7 +443,7 @@ async def run_workflow(
         # --- Finalizer ---
         t = task_registry.get_task(task_id)
         if t: base_input["deal_context"] = t.deal_context
-        
+
         task.status = TaskStatus.FINALIZING
         task.current_agent = "finalizer"
         task_registry.update_task(task)

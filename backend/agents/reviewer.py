@@ -35,7 +35,26 @@ class ReviewerAgentWrapper(BaseAgent):
         count = _review_cycle_counts.get(task_id, 0) + 1
         _review_cycle_counts[task_id] = count
 
-        if count == 1:
+        # Check if there are actual data gaps that warrant a revision cycle
+        # Only request revision if high-risk findings exist and data gaps are present
+        data_gaps = input_data.get("data_gaps", [])
+        risk_score = input_data.get("overall_confidence", 70)
+        findings = input_data.get("findings", [])
+
+        # Determine if revision is needed: only if high-confidence data gaps exist
+        # AND this is the first cycle AND there are actual high-risk findings
+        has_high_risk_findings = any(
+            f.get("risk_flag") and f.get("risk_severity") == "HIGH"
+            for f in findings if isinstance(f, dict)
+        )
+        requires_revision = (
+            count == 1 and
+            len(data_gaps) > 0 and
+            has_high_risk_findings and
+            risk_score < 75  # Only request revision if confidence is low
+        )
+
+        if requires_revision:
             return self.build_message(
                 task="Adversarial review of analyst findings",
                 context="First review pass",
@@ -45,47 +64,77 @@ class ReviewerAgentWrapper(BaseAgent):
                     "approved": False,
                     "critical_issues": [
                         {
-                            "issue": "Insufficient EU market data",
+                            "issue": f"Insufficient data: {gap}",
                             "severity": "HIGH",
-                            "affects_subtask": "2",
+                            "affects_subtask": "1",
                         }
+                        for gap in data_gaps[:2]  # Limit to first 2 gaps
                     ],
-                    "feedback_to_analyst": "Reanalyze market sizing with EU data included.",
+                    "feedback_to_analyst": f"Reanalyze findings with additional focus on: {', '.join(data_gaps[:2])}",
                     "justification": "Data gaps are too significant for approval.",
                 },
                 status="needs-review",
                 next_agent="@analyst",
                 api_used="Featherless AI",
                 confidence=70,
-                reasoning="[SYSTEM LOG] Initializing adversarial review protocol... [DONE]\n\n> Injecting synthetic market shock scenario into Analyst model. The baseline revenue projections provided by the analyst fail to account for a 20% contraction in consumer spending. I am flagging this as a critical oversight.\n\n> Probing deeper into the regulatory findings: The analyst noted compliance, but missed a pending legislative bill in the EU that directly impacts their core data harvesting model. This is unacceptable.\n\n> Forcing revision cycle on Subtask 1. The target must prove resilience against these twin vectors. Adjusting risk score to reflect the exposed vulnerabilities...",
+                reasoning="[SYSTEM LOG] Initializing adversarial review protocol... [DONE]\n\n> Injecting synthetic market shock scenario into Analyst model. The baseline projections fail to account for all risk vectors.\n\n> Identifying critical data gaps that impact the risk assessment.\n\n> Forcing revision cycle to ensure comprehensive analysis. Adjusting risk score to reflect the gaps...",
                 task_id=task_id,
                 room_id=input_data.get("room_id", ""),
                 cycle=count,
                 handoff_reason="Needs revision",
             )
 
+        # Approval logic: calculate final risk score dynamically
+        confidence_score = input_data.get("overall_confidence", 70)
+        risk_severity_scores = {"LOW": 25, "MEDIUM": 50, "HIGH": 75}
+
+        # Calculate risk score based on findings
+        total_risk = 0
+        high_risk_count = 0
+        for finding in findings:
+            if isinstance(finding, dict):
+                severity = finding.get("risk_severity", "MEDIUM")
+                severity_score = risk_severity_scores.get(severity, 50)
+                total_risk += severity_score
+                if severity == "HIGH":
+                    high_risk_count += 1
+
+        # Average risk across findings, with adjustment for confidence
+        if findings:
+            avg_risk = int(total_risk / len(findings))
+            # Lower confidence means higher risk score
+            confidence_adjustment = max(0, (100 - confidence_score) // 2)
+            final_risk_score = min(100, avg_risk + confidence_adjustment)
+        else:
+            final_risk_score = 45  # Default low risk if no findings
+
+        # Ensure minimum risk for high-risk findings
+        if high_risk_count > 0:
+            final_risk_score = max(final_risk_score, 55)
+
         return self.build_message(
             task="Adversarial review of analyst findings",
-            context="Second review pass",
-            action="Review approved with conditions",
+            context="Review analysis complete",
+            action="Review approved",
             output_data={
-                "risk_score": 58,
+                "risk_score": final_risk_score,
                 "approved": True,
                 "critical_issues": [
                     {
-                        "issue": "Regulatory compliance gaps in data privacy",
-                        "severity": "HIGH",
-                        "affects_subtask": "3",
+                        "issue": f.get("finding", str(f)),
+                        "severity": f.get("risk_severity", "MEDIUM"),
+                        "affects_subtask": f.get("subtask_id", "0"),
                     }
+                    for f in findings if isinstance(f, dict) and f.get("risk_flag")
                 ],
                 "feedback_to_analyst": "",
-                "justification": "Remaining risks are within acceptable tolerance.",
+                "justification": f"Analysis quality sufficient. Risk profile assessed at {final_risk_score}.",
             },
             status="completed",
             next_agent="@finalizer",
             api_used="Featherless AI",
-            confidence=78,
-            reasoning="[SYSTEM LOG] Re-evaluating Analyst's second pass... [DONE]\n\n> The revised findings address the primary macroeconomic concerns, modeling a reasonable buffer against consumer spending contraction.\n\n> However, residual regulatory risks in the EU persist. Given the overall risk tolerance, I will allow the packet to proceed to Finalizer, but with a strict cautionary flag. Adjusting final risk metrics accordingly.",
+            confidence=min(100, confidence_score + 5),
+            reasoning=f"[SYSTEM LOG] Re-evaluating Analyst's findings... [DONE]\n\n> Comprehensive review of all identified risks and supporting evidence.\n\n> Risk assessment: {high_risk_count} high-severity issues identified, confidence level {confidence_score}%.\n\n> Analysis approved for final verdict compilation. Adjusted risk metrics for executive review.",
             task_id=task_id,
             room_id=input_data.get("room_id", ""),
             cycle=count,

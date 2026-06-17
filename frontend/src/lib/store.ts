@@ -70,7 +70,7 @@ export const useAegisStore = create<AegisStore>()(
           const taskName = snapshot.task?.company_name || 'Unknown Target'
           const taskId = snapshot.task?.task_id
           let newSessions = [...state.recentSessions]
-          
+
           if (taskId && !newSessions.some(s => s.taskId === taskId)) {
             newSessions.unshift({
               taskId,
@@ -93,8 +93,20 @@ export const useAegisStore = create<AegisStore>()(
             (m) => m.action === msg.action && m.metadata?.cycle === msg.metadata?.cycle && m.owner === msg.owner
           )
           if (exists) return state
+
+          // Update agent confidence from band message
+          const agents = state.agents.map((a) => {
+            if (a.agent_id !== msg.owner) return a
+            return {
+              ...a,
+              confidence: msg.output.confidence,
+              api_used: msg.output.api_used || a.api_used,
+            }
+          })
+
           return {
             messages: [...state.messages, msg],
+            agents,
           }
         }),
 
@@ -141,8 +153,8 @@ export const useAegisStore = create<AegisStore>()(
     }),
     {
       name: 'aegis-session-storage',
-      partialize: (state) => ({ 
-        roomId: state.roomId, 
+      partialize: (state) => ({
+        roomId: state.roomId,
         taskId: state.taskId,
         recentSessions: state.recentSessions || [],
         preferredModel: state.preferredModel

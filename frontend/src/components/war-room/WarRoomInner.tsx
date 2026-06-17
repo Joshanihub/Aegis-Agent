@@ -7,10 +7,12 @@ import { getTaskStatus } from '@/lib/api'
 import { BandClient } from '@/lib/ws/BandClient'
 import { useAegisStore } from '@/lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
+import { calculateWorkflowProgress } from '@/lib/utils/progressCalculator'
 
 import AgentGrid from '@/components/war-room/AgentGrid'
 import TerminalStream from '@/components/war-room/TerminalStream'
 import LockedSidebar from '@/components/war-room/LockedSidebar'
+import WorkflowProgress from '@/components/war-room/WorkflowProgress'
 import GlassPanel from '@/components/ui/GlassPanel'
 import MonoLabel from '@/components/ui/MonoLabel'
 import AegisSidebar from '@/components/ui/AegisSidebar'
@@ -191,9 +193,9 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
 
       {/* Main Content Area */}
       <div className="flex-1 md:ml-[280px] flex flex-col relative h-full">
-        <AegisTopBar 
-          title="War Room" 
-          subtitle="Live Workflow Visualization" 
+        <AegisTopBar
+          title="War Room"
+          subtitle="Live Workflow Visualization"
           taskId={taskId}
           status={roomStatus === 'connected' ? 'live' : roomStatus === 'connecting' ? 'connecting' : roomStatus === 'error' ? 'error' : 'idle'}
         />
@@ -202,51 +204,58 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
         <main className="flex-1 overflow-y-auto mt-14 p-8 xl:p-12">
           <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8">
             {/* Cinematic Hero */}
-            <section className="relative w-full rounded-xl overflow-hidden glass-panel p-8 flex items-end animate-enter h-[200px]">
+            <section className="relative w-full rounded-xl overflow-hidden glass-panel p-8 flex flex-col gap-6 animate-enter">
               <div className="absolute inset-0 bg-gradient-to-t from-surface-container via-surface-container/50 to-transparent" />
-              <div className="relative z-10 w-full flex justify-between items-end">
-                <div>
-                  <h2 className="font-headline text-headline-lg font-bold text-on-surface tracking-tight mb-2">
-                    Analysis in Progress — <span className="text-primary">{task?.company_name || 'Loading...'}</span>
-                  </h2>
-                  <p className="font-body text-body-md text-on-surface-variant max-w-xl">
-                    {task?.deal_context || 'Awaiting context parameters...'}
-                  </p>
-                </div>
-                <div className="hidden sm:flex flex-col items-end gap-3">
-                  <div className="flex gap-2">
-                    <div className="px-4 py-1.5 bg-surface-glass border border-border-subtle rounded-md font-mono text-[11px] text-primary flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> System Nominal
+              <div className="relative z-10 w-full">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h2 className="font-headline text-headline-lg font-bold text-on-surface tracking-tight mb-2">
+                      Analysis in Progress — <span className="text-primary">{task?.company_name || 'Loading...'}</span>
+                    </h2>
+                    <p className="font-body text-body-md text-on-surface-variant max-w-xl">
+                      {task?.deal_context || 'Awaiting context parameters...'}
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex flex-col items-end gap-3">
+                    <div className="flex gap-2">
+                      <div className="px-4 py-1.5 bg-surface-glass border border-border-subtle rounded-md font-mono text-[11px] text-primary flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> System Nominal
+                      </div>
+                      <button
+                        onClick={() => setIsInterventionOpen(true)}
+                        className="px-4 py-1.5 bg-amber-agent/10 border border-amber-agent/30 text-amber-agent rounded-md font-mono text-[11px] hover:bg-amber-agent hover:text-surface transition-colors font-bold uppercase tracking-widest"
+                      >
+                        INTERVENE
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setIsInterventionOpen(true)}
-                      className="px-4 py-1.5 bg-amber-agent/10 border border-amber-agent/30 text-amber-agent rounded-md font-mono text-[11px] hover:bg-amber-agent hover:text-surface transition-colors font-bold uppercase tracking-widest"
-                    >
-                      INTERVENE
-                    </button>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
-                      Powered by Band
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
-                      Featherless AI
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
-                      AI/ML API
-                    </span>
+                    <div className="flex gap-2">
+                      <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
+                        Powered by Band
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
+                        Featherless AI
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
+                        AI/ML API
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Progress Bar */}
+                <WorkflowProgress
+                  {...calculateWorkflowProgress(agents)}
+                />
               </div>
             </section>
 
             <NotificationToast toasts={toasts} onDismiss={removeToast} />
-            <InterventionDrawer 
-              isOpen={isInterventionOpen || !!humanInputRequired} 
+            <InterventionDrawer
+              isOpen={isInterventionOpen || !!humanInputRequired}
               onClose={() => {
                 if (!humanInputRequired) setIsInterventionOpen(false)
-              }} 
-              onSubmit={handleInterventionSubmit} 
+              }}
+              onSubmit={handleInterventionSubmit}
               title={humanInputRequired ? "Reviewer Flagged High-Risk Findings" : "Inject Directives"}
               description={humanInputRequired ?? undefined}
             />
@@ -269,7 +278,7 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
                       />
                     </div>
                   </div>
-                  
+
                   <aside className="xl:col-span-4 hidden xl:block">
                     <LockedSidebar currentRisk={currentRisk} />
                   </aside>
