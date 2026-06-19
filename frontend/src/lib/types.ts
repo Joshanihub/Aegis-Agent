@@ -7,6 +7,7 @@ export type TaskStatus =
   | 'reviewing'
   | 'finalizing'
   | 'complete'
+  | 'cancelled'
   | 'error'
 
 export type AgentStatus = 'idle' | 'processing' | 'awaiting' | 'complete' | 'error'
@@ -83,6 +84,7 @@ export interface Citation {
   source_document: string
   snippet: string
   relevance: string
+  confidence?: number
 }
 
 export interface VerdictData {
@@ -111,6 +113,39 @@ export interface CreateRoomRequest {
 export interface CreateRoomResponse {
   room_id: string
   task_id: string
+}
+
+export interface SessionSummary {
+  task_id: string
+  room_id: string
+  company_name: string
+  status: TaskStatus
+  risk_tolerance: number
+  analysis_depth: string
+  created_at: string
+  updated_at: string
+  message_count: number
+  verdict?: VerdictType | null
+  risk_score?: number | null
+}
+
+export interface ComparisonCriterion {
+  criterion: string
+  primary: string
+  alternative: string
+}
+
+export interface ComparisonData {
+  primary_company: string
+  alternative_company: string
+  primary_risk_score: number
+  alternative_risk_score: number | null
+  recommendation: string
+  confidence: number
+  method: string
+  criteria: ComparisonCriterion[]
+  rationale: string
+  next_steps: string[]
 }
 
 export interface StateSnapshot {
@@ -147,4 +182,9 @@ export interface WsErrorEvent {
 export interface HumanInputRequiredEvent {
   type: 'human_input_required'
   message: string
+}
+
+export interface WorkflowStateEvent {
+  type: 'workflow_cancelled' | 'workflow_retried'
+  task: TaskState
 }

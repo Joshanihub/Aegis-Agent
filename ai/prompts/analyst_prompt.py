@@ -15,6 +15,11 @@ class AnalystAgent:
 
     async def run(self, input_data: dict[str, Any]) -> dict[str, Any]:
         subtasks = input_data.get("subtasks", [])
+        company_name = input_data.get("company_name", "Unknown target")
+        deal_context = input_data.get("deal_context", "")
+        analysis_approach = input_data.get("analysis_approach", "")
+        key_concerns = input_data.get("key_concerns", [])
+        reviewer_feedback = input_data.get("reviewer_feedback", "")
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
         cycle = input_data.get("cycle", 1)
@@ -24,10 +29,16 @@ class AnalystAgent:
 
         prompt = (
             f"You are a forensic financial analyst specializing in enterprise due diligence. "
-            f"Analyze the provided investment target against each subtask. Be precise, critical, and evidence-based.\n\n"
+            f"Analyze the investment target against the Planner's subtasks. Be precise, critical, and evidence-based.\n\n"
+            f"Company: {company_name}\n"
+            f"Deal context:\n{deal_context}\n\n"
+            f"Planner analysis approach: {analysis_approach}\n"
+            f"Planner key concerns:\n{json.dumps(key_concerns, indent=2)}\n\n"
             f"Subtasks to analyze:\n{json.dumps(subtasks, indent=2)}\n\n"
-            f"Think through each step carefully before producing your final output. "
-            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. Describe fetching data, cross-referencing, uncovering anomalies, and deducing facts. This log MUST be at least 3-4 paragraphs long.\n\n"
+            f"Reviewer feedback to address in this cycle:\n{reviewer_feedback or 'None - first analysis pass.'}\n\n"
+            f"Do not invent a different plan. Work through the Planner's subtasks in priority order, and when reviewer feedback is present, explicitly resolve it in the relevant finding or data_gaps entry.\n\n"
+            f"Produce decision-grade findings with compact evidence and confidence. "
+            f"Provide an 'internal_audit_log' as a concise 5-7 sentence audit summary describing evidence checked, anomalies found, and unresolved gaps. Do not reveal private chain-of-thought; write only decision-relevant rationale.\n\n"
             f"Example output:\n"
             f'{{\n'
             f'  "internal_audit_log": "[SYSTEM LOG] Fetching SEC filings and live market data... [DONE]\\n\\n> Initiating deep-dive correlation matrix across Q3 revenue and industry benchmarks. Instantly detecting a divergence in margin expansion versus peer median.\\n\\n> Scraping regulatory dockets for litigation risk... [WARNING] Match found regarding pending intellectual property disputes in the EMEA region. This could severely impact forward-looking EV multiples.\\n\\n> Synthesizing these granular findings into a coherent risk profile. The evidence strongly suggests hidden liabilities. Packaging raw telemetry for Reviewer override...",\n'

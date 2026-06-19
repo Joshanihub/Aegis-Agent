@@ -5,6 +5,7 @@ import type {
   WsErrorEvent,
   VerdictReadyEvent,
   HumanInputRequiredEvent,
+  WorkflowStateEvent,
 } from '@/lib/types'
 import type { ConnectionStatus } from '@/lib/store'
 interface Handlers {
@@ -16,6 +17,7 @@ interface Handlers {
   onConnectionStatusChange: (status: ConnectionStatus) => void
   onUserIntervention?: (guidance: string) => void
   onHumanInputRequired: (event: HumanInputRequiredEvent) => void
+  onWorkflowStateChanged?: (event: WorkflowStateEvent) => void
 }
 
 export class BandClient {
@@ -106,6 +108,12 @@ export class BandClient {
       }
       if (type === 'human_input_required') {
         this.handlers.onHumanInputRequired(payload as HumanInputRequiredEvent)
+        return
+      }
+      if (type === 'workflow_cancelled' || type === 'workflow_retried') {
+        if (this.handlers.onWorkflowStateChanged) {
+          this.handlers.onWorkflowStateChanged(payload as WorkflowStateEvent)
+        }
         return
       }
     }

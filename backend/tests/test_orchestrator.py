@@ -166,7 +166,7 @@ class TestOrchestrator:
                 return _stub_message(
                     "reviewer",
                     status="needs-review",
-                    risk_score=85,
+                    risk_score=75,
                     approved=False,
                     critical_issues=[],
                     feedback_to_analyst="redo",
@@ -214,6 +214,79 @@ class TestOrchestrator:
         assert analyst_calls == 2
         assert reviewer_calls == 2
         assert task.cycle_count == 1
+
+    @pytest.mark.asyncio
+    async def test_borderline_reviewer_risk_revises_without_human_pause(self):
+        task = _make_task()
+        analyst_calls = 0
+        events: list[str] = []
+
+        async def broadcast(event: dict):
+            events.append(event["type"])
+
+        async def analyst_run(input_data):
+            nonlocal analyst_calls
+            analyst_calls += 1
+            return _stub_message(
+                "analyst",
+                findings=[],
+                overall_confidence=74,
+                data_gaps=[],
+                recommendation_to_reviewer="ok",
+            ).model_dump()
+
+        reviewer_responses = [
+            _stub_message(
+                "reviewer",
+                status="needs-review",
+                risk_score=65,
+                approved=False,
+                critical_issues=[],
+                feedback_to_analyst="redo",
+                justification="needs another pass",
+            ).model_dump(),
+            _stub_message(
+                "reviewer",
+                risk_score=45,
+                approved=True,
+                critical_issues=[],
+                feedback_to_analyst="",
+                justification="ok",
+            ).model_dump(),
+        ]
+
+        mock_agents = {
+            "planner": AsyncMock(
+                run=AsyncMock(
+                    return_value=_stub_message(
+                        "planner",
+                        subtasks=[],
+                        analysis_framework="x",
+                        priority_order=[],
+                        estimated_complexity="medium",
+                    ).model_dump()
+                )
+            ),
+            "analyst": AsyncMock(run=analyst_run),
+            "reviewer": AsyncMock(run=AsyncMock(side_effect=reviewer_responses)),
+            "finalizer": AsyncMock(
+                run=AsyncMock(
+                    return_value=_stub_message(
+                        "finalizer",
+                        risk_score=45,
+                        verdict="caution",
+                        executive_summary="Caution",
+                        key_vulnerabilities=[],
+                    ).model_dump()
+                )
+            ),
+        }
+
+        band = BandService(mock_mode=True)
+        await run_workflow(task, broadcast, band, mock_agents)
+
+        assert analyst_calls == 2
+        assert "human_input_required" not in events
 
     @pytest.mark.asyncio
     async def test_agent_error_triggers_retry_then_fatal(self):

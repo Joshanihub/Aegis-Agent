@@ -9,10 +9,12 @@ import GlassPanel from '@/components/ui/GlassPanel'
 import MonoLabel from '@/components/ui/MonoLabel'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
+import Link from 'next/link'
 
 export interface DossierCardProps {
   verdict: VerdictData
   companyName?: string
+  taskId?: string
 }
 
 // Maps **Heading** bold-markdown into structured sections
@@ -102,7 +104,7 @@ function SummaryNarrative({ text }: { text: string }) {
 
 // Removed AgentProfileCard as it is now handled by ReasoningChain
 
-export default function DossierCard({ verdict, companyName = 'Target Company' }: DossierCardProps) {
+export default function DossierCard({ verdict, companyName = 'Target Company', taskId }: DossierCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
@@ -213,11 +215,18 @@ export default function DossierCard({ verdict, companyName = 'Target Company' }:
           </MonoLabel>
           <div className="flex flex-wrap gap-2">
             {verdict.competitive_alternatives.map((alt, idx) => (
-              <span key={idx} className="px-3 py-1.5 rounded-md bg-surface-container border border-border-subtle text-sm text-on-surface font-mono">
+              <Link
+                key={idx}
+                href={`/compare?taskId=${encodeURIComponent(taskId || '')}&alternative=${encodeURIComponent(alt)}`}
+                className="px-3 py-1.5 rounded-md bg-surface-container border border-border-subtle text-sm text-on-surface font-mono hover:border-cyan-agent hover:text-cyan-agent transition-colors"
+              >
                 {alt}
-              </span>
+              </Link>
             ))}
           </div>
+          <p className="mt-4 text-xs text-on-surface-variant/60 font-mono">
+            Select an alternative to open a side-by-side investment comparison.
+          </p>
         </GlassPanel>
       )}
 

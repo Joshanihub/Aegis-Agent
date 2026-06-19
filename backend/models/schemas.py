@@ -16,6 +16,7 @@ class TaskStatus(str, Enum):
     REVIEWING = "reviewing"
     FINALIZING = "finalizing"
     COMPLETE = "complete"
+    CANCELLED = "cancelled"
     ERROR = "error"
 
 
@@ -110,6 +111,30 @@ class InterveneInput(BaseModel):
     guidance: str = Field(min_length=2)
 
 
+class CompareInput(BaseModel):
+    alternative: str = Field(min_length=2)
+    alternative_task_id: Optional[str] = None
+
+
+class ComparisonCriterion(BaseModel):
+    criterion: str
+    primary: str
+    alternative: str
+
+
+class ComparisonData(BaseModel):
+    primary_company: str
+    alternative_company: str
+    primary_risk_score: int = Field(ge=0, le=100)
+    alternative_risk_score: Optional[int] = Field(default=None, ge=0, le=100)
+    recommendation: str
+    confidence: int = Field(default=70, ge=0, le=100)
+    method: str = "ai"
+    criteria: list[ComparisonCriterion]
+    rationale: str
+    next_steps: list[str] = Field(default_factory=list)
+
+
 class Vulnerability(BaseModel):
     description: str
     severity: str
@@ -128,6 +153,7 @@ class Citation(BaseModel):
     source_document: str
     snippet: str
     relevance: str
+    confidence: int = Field(default=80, ge=0, le=100)
 
 
 class VerdictData(BaseModel):
@@ -170,6 +196,20 @@ class TaskState(BaseModel):
     @classmethod
     def enforce_max_cycles(cls, value: int) -> int:
         return min(value, 2)
+
+
+class SessionSummary(BaseModel):
+    task_id: str
+    room_id: str
+    company_name: str
+    status: TaskStatus
+    risk_tolerance: int
+    analysis_depth: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int
+    verdict: Optional[VerdictType] = None
+    risk_score: Optional[int] = None
 
 
 class EventLogEntry(BaseModel):

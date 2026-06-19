@@ -11,6 +11,7 @@ import PyPDF2
 from models.schemas import (
     AgentStatus,
     BandMessage,
+    Citation,
     ReasoningStep,
     TaskState,
     TaskStatus,
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 WsBroadcast = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 
 MAX_REVIEW_CYCLES = 2
+HUMAN_REVIEW_RISK_THRESHOLD = 80
 
 AGENT_STATUS_MAP: dict[str, TaskStatus] = {
     "planner": TaskStatus.PLANNING,
@@ -41,8 +43,34 @@ class AgentError(Exception):
     """Raised when an agent fails to produce valid output."""
 
 
+class WorkflowCancelled(Exception):
+    """Raised when a user cancels an active workflow."""
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+async def _raise_if_cancelled(
+    task: TaskState, ws_broadcast: WsBroadcast, band: BandService
+) -> None:
+    if not task_registry.is_cancelled(task.task_id):
+        return
+
+    task.status = TaskStatus.CANCELLED
+    task.current_agent = None
+    task.updated_at = _now()
+    task_registry.update_task(task)
+    await ws_broadcast(
+        {
+            "type": "workflow_cancelled",
+            "task": task.model_dump(mode="json"),
+        }
+    )
+    try:
+        await band.close_room(task.room_id)
+    finally:
+        raise WorkflowCancelled()
 
 
 def _extract_text_from_documents(document_ids: list[str]) -> str:
@@ -184,6 +212,19 @@ def _extract_verdict(finalizer_msg: BandMessage, all_messages: list[BandMessage]
                 Vulnerability(description=str(item), severity="MEDIUM", details="")
             )
 
+    citations = []
+    for item in data.get("citations", []):
+        if isinstance(item, dict):
+            citations.append(
+                Citation(
+                    id=str(item.get("id", f"src-{len(citations) + 1}")),
+                    source_document=str(item.get("source_document", "Agent evidence")),
+                    snippet=str(item.get("snippet", "")),
+                    relevance=str(item.get("relevance", "")),
+                    confidence=int(item.get("confidence", 80)),
+                )
+            )
+
     risk_score = int(data.get("risk_score", 50))
     verdict_str = data.get("verdict", "caution")
     if verdict_str not in ("approve", "caution", "reject"):
@@ -200,8 +241,11 @@ def _extract_verdict(finalizer_msg: BandMessage, all_messages: list[BandMessage]
         summary=data.get("executive_summary") or data.get("summary", ""),
         vulnerabilities=vulnerabilities,
         reasoning_chain=reasoning_chain,
+        citations=citations,
         historical_context=data.get("historical_context"),
         future_path=data.get("future_path"),
+        competitive_alternatives=data.get("competitive_alternatives"),
+        conditions=data.get("conditions"),
     )
 
 
@@ -229,6 +273,7 @@ async def run_workflow(
     all_messages: list[BandMessage] = []
 
     try:
+        task_registry.clear_cancel(task_id)
         room_id = await band.create_room(task_id)
         task.room_id = room_id
         agent_ids = list(band.get_agent_ids().values())
@@ -287,6 +332,7 @@ async def run_workflow(
             await ws_broadcast({"type": "band_message", "message": compressor_msg.model_dump()})
 
         # --- Planner ---
+        await _raise_if_cancelled(task, ws_broadcast, band)
         t = task_registry.get_task(task_id)
         if t: base_input["deal_context"] = t.deal_context
 
@@ -311,12 +357,14 @@ async def run_workflow(
         await _emit_agent_status(
             task, "planner", AgentStatus.COMPLETE, planner_msg.action, ws_broadcast
         )
+        await _raise_if_cancelled(task, ws_broadcast, band)
 
         analyst_input = {**planner_msg.output.data, **base_input}
 
         # --- Reviewer loop (Analyst → Reviewer, max 2 cycles) ---
         reviewer_msg: BandMessage | None = None
         while task.cycle_count < MAX_REVIEW_CYCLES:
+            await _raise_if_cancelled(task, ws_broadcast, band)
             t = task_registry.get_task(task_id)
             if t: base_input["deal_context"] = t.deal_context
             analyst_input["deal_context"] = base_input["deal_context"]
@@ -352,6 +400,7 @@ async def run_workflow(
             await _emit_agent_status(
                 task, "analyst", AgentStatus.COMPLETE, analyst_msg.action, ws_broadcast
             )
+            await _raise_if_cancelled(task, ws_broadcast, band)
 
             # Reviewer
             t = task_registry.get_task(task_id)
@@ -370,7 +419,10 @@ async def run_workflow(
             reviewer_msg = await _run_agent_with_retry(
                 agent_map["reviewer"],
                 {
+                    **base_input,
                     **analyst_msg.output.data,
+                    "analyst_output": analyst_msg.output.data,
+                    "cycle": task.cycle_count + 1,
                     "task_id": task_id,
                     "room_id": room_id,
                 },
@@ -393,6 +445,7 @@ async def run_workflow(
             await _emit_agent_status(
                 task, "reviewer", AgentStatus.COMPLETE, reviewer_msg.action, ws_broadcast
             )
+            await _raise_if_cancelled(task, ws_broadcast, band)
 
             if reviewer_msg.status != "needs-review":
                 break
@@ -400,8 +453,9 @@ async def run_workflow(
             feedback = reviewer_msg.output.data.get("feedback_to_analyst", "Findings require human oversight.")
             risk_score = reviewer_msg.output.data.get("risk_score", 50)
 
-            # Only pause for high-risk findings
-            if risk_score >= 65:
+            # Normal reviewer objections should loop back to the Analyst.
+            # Pause for a human only when risk is truly severe.
+            if risk_score >= HUMAN_REVIEW_RISK_THRESHOLD:
                 # --- Human-in-the-Loop Pause ---
                 await _emit_agent_status(
                     task, "reviewer", AgentStatus.AWAITING, "Awaiting human intervention", ws_broadcast
@@ -414,6 +468,7 @@ async def run_workflow(
                 intervention_event = task_registry.get_intervention_event(task_id)
                 intervention_event.clear()
                 await intervention_event.wait()
+                await _raise_if_cancelled(task, ws_broadcast, band)
 
                 await _emit_agent_status(
                     task, "reviewer", AgentStatus.PROCESSING, "Resuming after intervention", ws_broadcast
@@ -441,6 +496,7 @@ async def run_workflow(
             raise AgentError("Reviewer did not produce output")
 
         # --- Finalizer ---
+        await _raise_if_cancelled(task, ws_broadcast, band)
         t = task_registry.get_task(task_id)
         if t: base_input["deal_context"] = t.deal_context
 
@@ -481,6 +537,7 @@ async def run_workflow(
         await _emit_agent_status(
             task, "finalizer", AgentStatus.COMPLETE, finalizer_msg.action, ws_broadcast
         )
+        await _raise_if_cancelled(task, ws_broadcast, band)
 
         verdict = _extract_verdict(finalizer_msg, all_messages)
         task.status = TaskStatus.COMPLETE
@@ -495,6 +552,14 @@ async def run_workflow(
 
         return verdict
 
+    except WorkflowCancelled:
+        return VerdictData(
+            risk_score=0,
+            verdict=VerdictType.CAUTION,
+            summary="Workflow cancelled before a final verdict was produced.",
+            vulnerabilities=[],
+            reasoning_chain=[],
+        )
     except AgentError:
         task.status = TaskStatus.ERROR
         task_registry.update_task(task)

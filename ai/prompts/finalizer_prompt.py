@@ -15,6 +15,7 @@ class FinalizerAgent:
     async def run(self, input_data: dict[str, Any]) -> dict[str, Any]:
         company_name = input_data.get("company_name", "Unknown")
         reviewer_output = input_data.get("reviewer_output", {})
+        all_messages = input_data.get("all_messages", [])
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
         preferred_model = input_data.get("preferred_model", "gpt-4o")
@@ -25,8 +26,8 @@ class FinalizerAgent:
             f"You are the chairman of an investment committee. Synthesize the team's analysis into a final, authoritative recommendation for the board. Be decisive. Use clear language. No hedging.\n\n"
             f"Target Company: {company_name}\n"
             f"Reviewer Output:\n{json.dumps(reviewer_output, indent=2)}\n\n"
-            f"Think through each step carefully before producing your final output. "
-            f"Provide a highly detailed, extremely verbose, stream-of-consciousness 'internal_audit_log' documenting your forensic thought process in real-time as if typing into a secure terminal. This log MUST be at least 3-4 paragraphs long, synthesizing the big picture.\n\n"
+            f"Full Agent Message Trail:\n{json.dumps(all_messages, indent=2)[:12000]}\n\n"
+            f"Provide an 'internal_audit_log' as a concise 6-8 sentence executive audit summary synthesizing the major evidence, dissent, accepted risk, and final decision. Do not reveal private chain-of-thought; write only board-relevant rationale.\n\n"
             f"CRITICAL REQUIREMENTS FOR `executive_summary`:\n"
             f"The `executive_summary` must be a FULL REPORT written in human-readable language, as if you are presenting to the board of directors. It must be highly detailed and extremely comprehensive.\n"
             f"Structure it exactly as follows, using these exact bold markdown headings:\n"
@@ -38,6 +39,9 @@ class FinalizerAgent:
             f"Write each section as a full, detailed paragraph. Do NOT use bullet points in the summary text. Write in flowing, professional prose as a senior investment architect would.\n\n"
             f"If the verdict is 'caution', you MUST include a 'conditions' array listing specific prerequisites the target must meet.\n"
             f"If the verdict is 'caution' or 'reject', include 2-3 specific 'competitive_alternatives'.\n\n"
+            f"Include a 'citations' array with 2-4 evidence objects using this shape: "
+            f'{{"id":"S1","source_document":"Agent finding or uploaded document name","snippet":"short evidence excerpt","relevance":"why it matters","confidence":85}}. '
+            f"Use only evidence present in the agent trail or uploaded context.\n\n"
 
             f"Example output:\n"
             f'{{\n'

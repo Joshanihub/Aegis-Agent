@@ -16,8 +16,11 @@ from fastapi.responses import JSONResponse
 import os
 
 _BACKEND_DIR = Path(__file__).parent.absolute()
+_PROJECT_ROOT = _BACKEND_DIR.parent
 if str(_BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(_BACKEND_DIR))
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 load_dotenv(_BACKEND_DIR / ".env")
 

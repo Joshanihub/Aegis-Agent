@@ -2,6 +2,8 @@ import type {
   AnalysisDepth,
   CreateRoomRequest,
   CreateRoomResponse,
+  ComparisonData,
+  SessionSummary,
   TaskState,
   VerdictData,
 } from '@/lib/types'
@@ -53,6 +55,42 @@ export async function getVerdict(taskId: string): Promise<VerdictData> {
   const payload: unknown = await res.json().catch(() => ({}))
   if (!res.ok) throwApiError(payload)
   return payload as VerdictData
+}
+
+export async function getSessions(): Promise<SessionSummary[]> {
+  const res = await fetch(`${BASE_URL}/api/sessions`)
+  const payload: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) throwApiError(payload)
+  return payload as SessionSummary[]
+}
+
+export async function cancelAnalysis(taskId: string): Promise<{ status: string, task_id: string }> {
+  const res = await fetch(`${BASE_URL}/api/rooms/${encodeURIComponent(taskId)}/cancel`, {
+    method: 'POST',
+  })
+  const payload: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) throwApiError(payload)
+  return payload as { status: string, task_id: string }
+}
+
+export async function retryAnalysis(taskId: string): Promise<{ status: string, task_id: string }> {
+  const res = await fetch(`${BASE_URL}/api/rooms/${encodeURIComponent(taskId)}/retry`, {
+    method: 'POST',
+  })
+  const payload: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) throwApiError(payload)
+  return payload as { status: string, task_id: string }
+}
+
+export async function compareAlternative(taskId: string, alternative: string): Promise<ComparisonData> {
+  const res = await fetch(`${BASE_URL}/api/rooms/${encodeURIComponent(taskId)}/compare`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ alternative }),
+  })
+  const payload: unknown = await res.json().catch(() => ({}))
+  if (!res.ok) throwApiError(payload)
+  return payload as ComparisonData
 }
 
 export async function refineAnalysis(taskId: string, newCriteria: string): Promise<{ status: string, task_id: string }> {

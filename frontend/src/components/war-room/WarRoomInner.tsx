@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getTaskStatus } from '@/lib/api'
+import { cancelAnalysis, getTaskStatus, retryAnalysis } from '@/lib/api'
 import { BandClient } from '@/lib/ws/BandClient'
 import { useAegisStore } from '@/lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -48,6 +48,7 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
 
   const [isInterventionOpen, setIsInterventionOpen] = useState(false)
   const [toasts, setToasts] = useState<ToastData[]>([])
+  const [workflowActionPending, setWorkflowActionPending] = useState(false)
 
   const addToast = (message: string, variant: ToastVariant = 'info', description?: string) => {
     const id = generateId()
@@ -166,6 +167,21 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
         setIsInterventionOpen(true)
         addToast('⚠ Human Input Required', 'warning', 'The Reviewer flagged high-risk findings. Your oversight is needed before the analysis continues.')
       },
+      onWorkflowStateChanged: (event) => {
+        if (closed) return
+        initializeFromSnapshot({
+          task: event.task,
+          agents: event.task.agents ?? [],
+          messages: event.task.messages ?? [],
+          verdict: null,
+        })
+        if (event.type === 'workflow_cancelled') {
+          addToast('Workflow Cancelled', 'warning', 'The analysis has stopped.')
+        }
+        if (event.type === 'workflow_retried') {
+          addToast('Workflow Retried', 'success', 'The analysis has restarted.')
+        }
+      },
     })
 
     setConnectionStatus('connecting')
@@ -185,6 +201,34 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
   }, [roomStatus, wsError])
 
   const currentRisk = task?.risk_tolerance ?? 0
+  const isWorkflowRunning = !!task && !['complete', 'error', 'cancelled'].includes(task.status)
+  const canRetryWorkflow = !!task && ['error', 'cancelled'].includes(task.status)
+
+  const handleCancelWorkflow = async () => {
+    if (!task || workflowActionPending) return
+    setWorkflowActionPending(true)
+    try {
+      await cancelAnalysis(taskId)
+      addToast('Analysis cancelled', 'warning', 'The workflow will stop at the next safe checkpoint.')
+    } catch {
+      addToast('Cancel failed', 'error', 'Could not cancel this workflow.')
+    } finally {
+      setWorkflowActionPending(false)
+    }
+  }
+
+  const handleRetryWorkflow = async () => {
+    if (!task || workflowActionPending) return
+    setWorkflowActionPending(true)
+    try {
+      await retryAnalysis(taskId)
+      addToast('Retry started', 'success', 'The committee is being relaunched.')
+    } catch {
+      addToast('Retry failed', 'error', 'Only cancelled or failed workflows can be retried.')
+    } finally {
+      setWorkflowActionPending(false)
+    }
+  }
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -221,12 +265,24 @@ export default function WarRoomInner({ taskId }: { taskId: string }) {
                       <div className="px-4 py-1.5 bg-surface-glass border border-border-subtle rounded-md font-mono text-[11px] text-primary flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> System Nominal
                       </div>
-                      <button
-                        onClick={() => setIsInterventionOpen(true)}
-                        className="px-4 py-1.5 bg-amber-agent/10 border border-amber-agent/30 text-amber-agent rounded-md font-mono text-[11px] hover:bg-amber-agent hover:text-surface transition-colors font-bold uppercase tracking-widest"
-                      >
-                        INTERVENE
-                      </button>
+                      {isWorkflowRunning && (
+                        <button
+                          onClick={handleCancelWorkflow}
+                          disabled={workflowActionPending}
+                          className="px-4 py-1.5 bg-rose-agent/10 border border-rose-agent/30 text-rose-agent rounded-md font-mono text-[11px] hover:bg-rose-agent hover:text-surface transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
+                        >
+                          CANCEL
+                        </button>
+                      )}
+                      {canRetryWorkflow && (
+                        <button
+                          onClick={handleRetryWorkflow}
+                          disabled={workflowActionPending}
+                          className="px-4 py-1.5 bg-emerald-agent/10 border border-emerald-agent/30 text-emerald-agent rounded-md font-mono text-[11px] hover:bg-emerald-agent hover:text-surface transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
+                        >
+                          RETRY
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <span className="px-2 py-0.5 rounded bg-surface-container-high border border-border-subtle font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">

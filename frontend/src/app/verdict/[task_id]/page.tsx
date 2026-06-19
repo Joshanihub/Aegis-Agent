@@ -6,7 +6,7 @@ import type { VerdictData } from '@/lib/types'
 import { useAegisStore } from '@/lib/store'
 import DossierCard from '@/components/verdict/DossierCard'
 import CollaborationPanel from '@/components/verdict/CollaborationPanel'
-import { getVerdict, refineAnalysis } from '@/lib/api'
+import { getTaskStatus, getVerdict, refineAnalysis } from '@/lib/api'
 import { motion } from 'framer-motion'
 import MonoLabel from '@/components/ui/MonoLabel'
 import TraceLine from '@/components/ui/TraceLine'
@@ -20,24 +20,42 @@ export default function VerdictPage() {
   const taskId = params.task_id
   const verdict = useAegisStore((s: { verdict: VerdictData | null }) => s.verdict)
   const setVerdict = useAegisStore((s: { setVerdict: (v: VerdictData | null) => void }) => s.setVerdict)
-  const companyName = useAegisStore((s) => s.task?.company_name ?? 'Target Company')
+  const storeTaskId = useAegisStore((s) => s.task?.task_id)
+  const initializeFromSnapshot = useAegisStore((s) => s.initializeFromSnapshot)
+  const companyName = useAegisStore((s) => s.task?.task_id === taskId ? s.task.company_name : 'Target Company')
   const roomId = useAegisStore((s) => s.roomId ?? '')
+  const currentVerdict = storeTaskId === taskId ? verdict : null
 
   const [refineCriteria, setRefineCriteria] = useState('')
   const [isRefining, setIsRefining] = useState(false)
 
   const [fetchError, setFetchError] = useState(false)
 
-  // Fetch verdict from REST if store is empty (e.g., direct URL navigation)
+  // Fetch task/verdict from REST if store is empty or belongs to another route.
   useEffect(() => {
     if (!taskId) return
-    if (verdict) return
+    if (currentVerdict) return
 
     let isMounted = true
     let retries = 3
 
     const fetchV = async () => {
       try {
+        const status = await getTaskStatus(taskId)
+        if (!isMounted) return
+
+        initializeFromSnapshot({
+          task: status,
+          agents: status.agents ?? [],
+          messages: status.messages ?? [],
+          verdict: null,
+        })
+
+        if (status.status !== 'complete') {
+          router.replace(`/war-room/${encodeURIComponent(taskId)}`)
+          return
+        }
+
         const v: VerdictData = await getVerdict(taskId)
         if (isMounted) {
           setVerdict(v)
@@ -59,7 +77,7 @@ export default function VerdictPage() {
     return () => {
       isMounted = false
     }
-  }, [taskId, verdict, setVerdict])
+  }, [taskId, currentVerdict, initializeFromSnapshot, router, setVerdict])
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -72,13 +90,13 @@ export default function VerdictPage() {
           title="Final Verdict" 
           subtitle="Dossier Complete" 
           taskId={taskId}
-          status={verdict ? 'complete' : 'live'}
+          status={currentVerdict ? 'complete' : 'live'}
         />
 
         {/* Scrollable Workspace Content */}
         <main className="flex-1 overflow-y-auto mt-14 p-8 xl:p-12">
           <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8 pb-10">
-            {verdict ? (
+            {currentVerdict ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -88,7 +106,7 @@ export default function VerdictPage() {
                 <div className="flex justify-end">
                   <CollaborationPanel roomId={roomId} taskId={taskId} companyName={companyName} />
                 </div>
-                <DossierCard verdict={verdict} companyName={companyName} />
+                <DossierCard verdict={currentVerdict} companyName={companyName} taskId={taskId} />
                 
                 {/* Continuous Refinement Panel */}
                 <div className="glass-panel p-8 mt-4 flex flex-col gap-4 border-t-2 border-t-indigo-init relative overflow-hidden group">

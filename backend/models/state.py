@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Coroutine
 
-from models.schemas import TaskState, VerdictData
+from models.schemas import SessionSummary, TaskState, VerdictData
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ _tasks: dict[str, TaskState] = {}
 _verdicts: dict[str, VerdictData] = {}
 _ws_connections: dict[str, list[Any]] = {}
 _intervention_events: dict[str, asyncio.Event] = {}
+_cancelled_tasks: set[str] = set()
 
 def get_intervention_event(task_id: str) -> asyncio.Event:
     if task_id not in _intervention_events:
@@ -68,6 +69,28 @@ def get_task(task_id: str) -> TaskState | None:
     return _tasks.get(task_id)
 
 
+def list_sessions() -> list[SessionSummary]:
+    sessions: list[SessionSummary] = []
+    for task in _tasks.values():
+        verdict = _verdicts.get(task.task_id)
+        sessions.append(
+            SessionSummary(
+                task_id=task.task_id,
+                room_id=task.room_id,
+                company_name=task.company_name,
+                status=task.status,
+                risk_tolerance=task.risk_tolerance,
+                analysis_depth=task.analysis_depth,
+                created_at=task.created_at,
+                updated_at=task.updated_at,
+                message_count=len(task.messages),
+                verdict=verdict.verdict if verdict else None,
+                risk_score=verdict.risk_score if verdict else None,
+            )
+        )
+    return sorted(sessions, key=lambda session: session.updated_at, reverse=True)
+
+
 def update_task(task: TaskState) -> None:
     _tasks[task.task_id] = task
     save_state()
@@ -82,6 +105,18 @@ def set_verdict(task_id: str, verdict: VerdictData | None) -> None:
 
 def get_verdict(task_id: str) -> VerdictData | None:
     return _verdicts.get(task_id)
+
+
+def request_cancel(task_id: str) -> None:
+    _cancelled_tasks.add(task_id)
+
+
+def clear_cancel(task_id: str) -> None:
+    _cancelled_tasks.discard(task_id)
+
+
+def is_cancelled(task_id: str) -> bool:
+    return task_id in _cancelled_tasks
 
 
 def add_ws_connection(task_id: str, websocket: Any) -> None:
@@ -103,3 +138,4 @@ def clear_all() -> None:
     _tasks.clear()
     _verdicts.clear()
     _ws_connections.clear()
+    _cancelled_tasks.clear()

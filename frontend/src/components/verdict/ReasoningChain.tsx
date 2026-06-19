@@ -71,9 +71,12 @@ export default function ReasoningChain({ steps, citations }: ReasoningChainProps
               <button
                 key={cit.id}
                 onClick={() => setActiveCitation(cit)}
-                className="px-3 py-1.5 text-xs font-mono rounded bg-surface-container border border-border-subtle text-on-surface hover:border-primary hover:text-primary transition-colors"
+                className="px-3 py-1.5 text-xs font-mono rounded bg-surface-container border border-border-subtle text-on-surface hover:border-primary hover:text-primary transition-colors inline-flex items-center gap-2"
               >
                 [{cit.id}] {cit.source_document}
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                  {cit.confidence ?? 80}%
+                </span>
               </button>
             ))}
           </div>
@@ -119,6 +122,15 @@ export default function ReasoningChain({ steps, citations }: ReasoningChainProps
                 <p className="text-sm font-body text-on-surface/90">
                   {activeCitation.relevance}
                 </p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border-subtle">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-on-surface-variant/60 block mb-1">Evidence Confidence</span>
+                <div className="h-2 rounded-full bg-surface overflow-hidden border border-border-subtle">
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${activeCitation.confidence ?? 80}%` }}
+                  />
+                </div>
               </div>
             </motion.div>
           </motion.div>

@@ -7,7 +7,7 @@ import AegisSidebar from '@/components/ui/AegisSidebar'
 import AegisTopBar from '@/components/ui/AegisTopBar'
 import { useAegisStore } from '@/lib/store'
 import Footer from '@/components/ui/Footer'
-import { useRouter } from 'next/navigation'
+import type { TaskStatus } from '@/lib/types'
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -19,8 +19,13 @@ const staggerItem = {
   show: { opacity: 1, y: 0, transition: { ease: [0.16, 1, 0.3, 1], duration: 0.6 } },
 }
 
+function sessionHref(session: { taskId: string; status?: TaskStatus }) {
+  return session.status === 'complete'
+    ? `/verdict/${encodeURIComponent(session.taskId)}`
+    : `/war-room/${encodeURIComponent(session.taskId)}`
+}
+
 export default function DashboardPage() {
-  const router = useRouter()
   const recentSessions = useAegisStore((s) => s.recentSessions || [])
   const preferredModel = useAegisStore((s) => s.preferredModel || 'auto')
 
@@ -120,7 +125,7 @@ export default function DashboardPage() {
                   {recentSessions.slice(0, 6).map((session) => (
                     <Link
                       key={session.taskId}
-                      href={`/verdict/${encodeURIComponent(session.taskId)}`}
+                      href={sessionHref(session)}
                       className="glass-panel p-5 rounded-xl hover:bg-surface-container-low transition-all duration-200 group"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -128,6 +133,9 @@ export default function DashboardPage() {
                           <p className="font-mono text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">{session.companyName}</p>
                           <p className="font-mono text-[10px] text-on-surface-variant/60 mt-1.5 uppercase tracking-wider">
                             {new Date(session.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          <p className="font-mono text-[9px] text-on-surface-variant/40 mt-1 uppercase tracking-wider">
+                            {session.status === 'complete' ? 'Verdict ready' : 'Open war room'}
                           </p>
                         </div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-on-surface-variant/40 group-hover:text-primary transition-colors shrink-0 mt-1">

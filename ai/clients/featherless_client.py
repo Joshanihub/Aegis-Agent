@@ -13,6 +13,8 @@ class FeatherlessClient:
         self.api_key = os.getenv("FEATHERLESS_API_KEY")
         self.default_model = "mistralai/Mistral-7B-Instruct-v0.2"
         self.fallback_client = AIMLClient()
+        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "1400"))
+        self.timeout_seconds = float(os.getenv("AI_COMPLETION_TIMEOUT_SECONDS", "24"))
 
     async def call_completion(self, prompt: str, model: str = None) -> str:
         if not self.api_key:
@@ -30,7 +32,7 @@ class FeatherlessClient:
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.2,
-            "max_tokens": 1500
+            "max_tokens": self.max_tokens
         }
         
         async with httpx.AsyncClient() as client:
@@ -40,7 +42,7 @@ class FeatherlessClient:
                         f"{self.base_url}/chat/completions",
                         headers=headers,
                         json=payload,
-                        timeout=30.0
+                        timeout=self.timeout_seconds
                     )
                     response.raise_for_status()
                     data = response.json()

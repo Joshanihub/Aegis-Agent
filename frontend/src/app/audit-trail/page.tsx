@@ -48,6 +48,26 @@ export default function AuditTrailPage() {
     show: { opacity: 1, x: 0, transition: { ease: [0.16, 1, 0.3, 1], duration: 0.5 } },
   }
 
+  const exportAuditTrail = () => {
+    if (!task) return
+    const blob = new Blob([JSON.stringify({
+      task_id: task.task_id,
+      room_id: task.room_id,
+      company_name: task.company_name,
+      status: task.status,
+      exported_at: new Date().toISOString(),
+      messages: task.messages,
+    }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${task.company_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-audit-trail.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       <AegisSidebar onNewAnalysis={() => {
@@ -61,12 +81,24 @@ export default function AuditTrailPage() {
         <main className="flex-1 overflow-y-auto mt-14 p-8 xl:p-12">
           <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-8 pb-10">
             <header className="mb-2">
-              <h1 className="font-headline text-headline-lg font-bold text-on-surface tracking-tight mb-2">
-                Cryptographic Audit Trail
-              </h1>
-              <p className="font-body text-sm text-on-surface-variant max-w-2xl">
-                Immutable record of all agent interactions, API calls, and reasoning steps during the active session. This log satisfies Zero-Knowledge compliance requirements.
-              </p>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div>
+                  <h1 className="font-headline text-headline-lg font-bold text-on-surface tracking-tight mb-2">
+                    Cryptographic Audit Trail
+                  </h1>
+                  <p className="font-body text-sm text-on-surface-variant max-w-2xl">
+                    Immutable record of all agent interactions, API calls, and reasoning steps during the active session. This log satisfies Zero-Knowledge compliance requirements.
+                  </p>
+                </div>
+                {task && (
+                  <button
+                    onClick={exportAuditTrail}
+                    className="px-5 py-3 rounded-md bg-surface-container border border-border-subtle text-on-surface font-mono text-xs font-bold tracking-widest uppercase hover:border-primary hover:text-primary transition-colors"
+                  >
+                    Export JSON
+                  </button>
+                )}
+              </div>
             </header>
 
             {!taskId && !loading && (

@@ -1,13 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AgentState, BandMessage, VerdictData, TaskState } from '@/lib/types'
+import type { AgentState, BandMessage, VerdictData, TaskState, TaskStatus } from '@/lib/types'
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 type AegisIdentifiers = {
   roomId: string | null
   taskId: string | null
-  recentSessions: { taskId: string; companyName: string; timestamp: string }[]
+  recentSessions: { taskId: string; companyName: string; timestamp: string; status?: TaskStatus }[]
   preferredModel: string
 }
 
@@ -69,19 +69,35 @@ export const useAegisStore = create<AegisStore>()(
         set((state) => {
           const taskName = snapshot.task?.company_name || 'Unknown Target'
           const taskId = snapshot.task?.task_id
+          const taskStatus = snapshot.task?.status
           let newSessions = [...state.recentSessions]
 
-          if (taskId && !newSessions.some(s => s.taskId === taskId)) {
-            newSessions.unshift({
+          if (taskId) {
+            const existing = newSessions.findIndex(s => s.taskId === taskId)
+            const nextSession = {
               taskId,
               companyName: taskName,
-              timestamp: new Date().toISOString()
-            })
+              timestamp: new Date().toISOString(),
+              status: taskStatus,
+            }
+
+            if (existing >= 0) {
+              newSessions[existing] = {
+                ...newSessions[existing],
+                ...nextSession,
+                timestamp: newSessions[existing].timestamp,
+              }
+            } else {
+              newSessions.unshift(nextSession)
+            }
+
             if (newSessions.length > 5) newSessions.pop()
           }
 
           return {
             ...snapshot,
+            roomId: snapshot.task.room_id,
+            taskId: snapshot.task.task_id,
             recentSessions: newSessions
           }
         }),
@@ -128,7 +144,14 @@ export const useAegisStore = create<AegisStore>()(
       setVerdict: (verdict) =>
         set((state) => ({
           verdict,
-          task: state.task ? { ...state.task } : state.task,
+          task: state.task ? { ...state.task, status: verdict ? 'complete' : state.task.status } : state.task,
+          recentSessions: state.task
+            ? state.recentSessions.map((session) =>
+                session.taskId === state.task?.task_id
+                  ? { ...session, status: verdict ? 'complete' : session.status }
+                  : session
+              )
+            : state.recentSessions,
         })),
 
       setConnectionStatus: (status) => set(() => ({ roomStatus: status })),

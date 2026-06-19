@@ -11,6 +11,8 @@ class AIMLClient:
         self.base_url = os.getenv("AI_ML_API_BASE_URL", "https://api.aimlapi.com/v1")
         self.api_key = os.getenv("AI_ML_API_KEY")
         self.default_model = "gpt-4o-mini"
+        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "1400"))
+        self.timeout_seconds = float(os.getenv("AI_COMPLETION_TIMEOUT_SECONDS", "24"))
 
     async def call_completion(self, prompt: str, model: str = None) -> str:
         if not self.api_key:
@@ -27,8 +29,8 @@ class AIMLClient:
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.3,
-            "max_tokens": 1500
+            "temperature": 0.2,
+            "max_tokens": self.max_tokens
         }
         
         async with httpx.AsyncClient() as client:
@@ -38,7 +40,7 @@ class AIMLClient:
                         f"{self.base_url}/chat/completions",
                         headers=headers,
                         json=payload,
-                        timeout=30.0
+                        timeout=self.timeout_seconds
                     )
                     response.raise_for_status()
                     data = response.json()
