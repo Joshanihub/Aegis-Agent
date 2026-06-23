@@ -3,11 +3,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy requirements and install
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code (build context is already backend/ because of Railway rootDirectory)
-COPY . .
+# Copy ai module from project root
+COPY ai ./ai
+
+# Copy backend source code
+COPY backend .
 
 EXPOSE 8000
 
