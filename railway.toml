@@ -1,5 +1,6 @@
 [build]
 builder = "DOCKERFILE"
+context = "."
 dockerfilePath = "Dockerfile"
 
 [deploy]
