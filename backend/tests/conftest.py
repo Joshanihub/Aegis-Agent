@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
+
+# Ensure `backend/` is on the import path so tests can import `models`, `services`, etc.
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
 
 from models import state as task_registry
 from services.event_logger import EventLogger, event_logger
