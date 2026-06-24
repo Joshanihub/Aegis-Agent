@@ -37,10 +37,11 @@ export default function TaskInputForm() {
 
   const [companyName, setCompanyName] = useState('')
   const [dealContext, setDealContext] = useState('')
-  const [riskTolerance, setRiskTolerance] = useState(60)
+  const [riskTolerance, setRiskTolerance] = useState(useAegisStore.getState().defaultRiskTolerance)
   const [persona, setPersona] = useState('Standard Analyst')
-  const [analysisDepth, setAnalysisDepth] = useState<AnalysisDepth>('STANDARD')
-  const [preferredModel, setPreferredModel] = useState(useAegisStore.getState().preferredModel || 'auto')
+  const [analysisDepth, setAnalysisDepth] = useState<AnalysisDepth>(useAegisStore.getState().defaultAnalysisDepth)
+  const [defaultAimlModel, setDefaultAimlModel] = useState(useAegisStore.getState().defaultAimlModel || 'gpt-4o')
+  const [defaultFeatherlessModel, setDefaultFeatherlessModel] = useState(useAegisStore.getState().defaultFeatherlessModel || 'meta-llama/Llama-3.3-70B-Instruct')
 
   const [uploadedFiles, setUploadedFiles] = useState<{file_id: string, filename: string}[]>([])
   const [uploading, setUploading] = useState(false)
@@ -101,7 +102,8 @@ export default function TaskInputForm() {
         risk_tolerance: riskTolerance,
         analysis_depth: analysisDepth,
         persona: persona,
-        preferred_model: preferredModel,
+        preferred_aiml_model: defaultAimlModel,
+        preferred_featherless_model: defaultFeatherlessModel,
         document_ids: uploadedFiles.map(f => f.file_id)
       })
 
@@ -310,41 +312,62 @@ export default function TaskInputForm() {
         </div>
       </motion.div>
 
-      <motion.div variants={staggerItem}>
-        <label htmlFor="preferred_model" className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2">
-          MODEL ROUTING
-        </label>
-        <div className="relative">
-          <select
-            id="preferred_model"
-            name="preferred_model"
-            value={preferredModel}
-            onChange={(e) => setPreferredModel(e.target.value)}
-            disabled={submitting}
-            className="w-full bg-surface-container border border-border-subtle rounded-md py-3 px-4 text-body-md text-on-surface focus:outline-none focus:border-accent-luminous transition-colors appearance-none"
-          >
-            <option value="auto">Auto-Route (Task Based)</option>
-            <optgroup label="AI/ML API (OpenAI / Anthropic / Google)">
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+      <motion.div variants={staggerItem} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="preferred_aiml_model" className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2">
+            REASONING ENGINE (AI/ML)
+          </label>
+          <div className="relative">
+            <select
+              id="preferred_aiml_model"
+              name="preferred_aiml_model"
+              value={defaultAimlModel}
+              onChange={(e) => setDefaultAimlModel(e.target.value)}
+              disabled={submitting}
+              className="w-full bg-surface-container border border-border-subtle rounded-md py-3 px-4 text-body-md text-on-surface focus:outline-none focus:border-accent-luminous transition-colors appearance-none"
+            >
+              <option value="gpt-4o">GPT-4o (Default)</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+              <option value="o1-preview">o1 Preview</option>
+              <option value="o3-mini">o3 Mini</option>
+              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
               <option value="claude-3-opus-20240229">Claude 3 Opus</option>
               <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-            </optgroup>
-            <optgroup label="Featherless AI (Open Source)">
-              <option value="mistralai/Mistral-7B-Instruct-v0.2">Mistral 7B Instruct</option>
-              <option value="meta-llama/Meta-Llama-3-8B-Instruct">Llama 3 8B</option>
-              <option value="meta-llama/Meta-Llama-3-70B-Instruct">Llama 3 70B</option>
-              <option value="Qwen/Qwen2-72B-Instruct">Qwen2 72B</option>
-            </optgroup>
-          </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            {submitting && <div className="absolute inset-0 bg-surface/50 rounded-md" />}
           </div>
-          {submitting && <div className="absolute inset-0 bg-surface/50 rounded-md" />}
+        </div>
+
+        <div>
+          <label htmlFor="preferred_featherless_model" className="font-mono text-[12px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2">
+            DATA ENGINE (FEATHERLESS)
+          </label>
+          <div className="relative">
+            <select
+              id="preferred_featherless_model"
+              name="preferred_featherless_model"
+              value={defaultFeatherlessModel}
+              onChange={(e) => setDefaultFeatherlessModel(e.target.value)}
+              disabled={submitting}
+              className="w-full bg-surface-container border border-border-subtle rounded-md py-3 px-4 text-body-md text-on-surface focus:outline-none focus:border-accent-luminous transition-colors appearance-none"
+            >
+              <option value="meta-llama/Llama-3.3-70B-Instruct">Llama 3.3 (70B)</option>
+              <option value="meta-llama/Llama-3.1-405B-Instruct">Llama 3.1 (405B)</option>
+              <option value="Qwen/Qwen2.5-72B-Instruct">Qwen2.5 (72B)</option>
+              <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            {submitting && <div className="absolute inset-0 bg-surface/50 rounded-md" />}
+          </div>
         </div>
       </motion.div>
 

@@ -12,19 +12,18 @@ from ai.clients.featherless_client import FeatherlessClient
 MODEL_REGISTRY: dict[str, tuple[str, str]] = {
     # --- AI/ML API (OpenAI / Anthropic / Google) ---
     "gpt-4o":                       ("aiml", "gpt-4o"),
-    "gpt-4-turbo":                  ("aiml", "gpt-4-turbo"),
     "gpt-4o-mini":                  ("aiml", "gpt-4o-mini"),
-    "claude-3-5-sonnet-20240620":   ("aiml", "claude-3-5-sonnet-20240620"),
+    "o1-preview":                   ("aiml", "o1-preview"),
+    "o3-mini":                      ("aiml", "o3-mini"),
+    "claude-3-5-sonnet-20241022":   ("aiml", "claude-3-5-sonnet-20241022"),
     "claude-3-opus-20240229":       ("aiml", "claude-3-opus-20240229"),
     "gemini-1.5-pro":               ("aiml", "gemini-1.5-pro"),
-    "gemini-1.5-flash":             ("aiml", "gemini-1.5-flash"),
 
     # --- Featherless AI (open-source HuggingFace models) ---
-    "mistral-7b":                               ("featherless", "mistralai/Mistral-7B-Instruct-v0.2"),
-    "mistralai/Mistral-7B-Instruct-v0.2":       ("featherless", "mistralai/Mistral-7B-Instruct-v0.2"),
-    "meta-llama/Meta-Llama-3-8B-Instruct":      ("featherless", "meta-llama/Meta-Llama-3-8B-Instruct"),
-    "meta-llama/Meta-Llama-3-70B-Instruct":     ("featherless", "meta-llama/Meta-Llama-3-70B-Instruct"),
-    "Qwen/Qwen2-72B-Instruct":                  ("featherless", "Qwen/Qwen2-72B-Instruct"),
+    "meta-llama/Llama-3.3-70B-Instruct":  ("featherless", "meta-llama/Llama-3.3-70B-Instruct"),
+    "meta-llama/Llama-3.1-405B-Instruct": ("featherless", "meta-llama/Llama-3.1-405B-Instruct"),
+    "Qwen/Qwen2.5-72B-Instruct":          ("featherless", "Qwen/Qwen2.5-72B-Instruct"),
+    "deepseek-ai/DeepSeek-V3":            ("featherless", "deepseek-ai/DeepSeek-V3"),
 }
 
 # Substrings that indicate a model belongs on AIML even if not in the registry

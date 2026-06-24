@@ -18,16 +18,16 @@ class FinalizerAgent:
         all_messages = input_data.get("all_messages", [])
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
-        preferred_model = input_data.get("preferred_model", "gpt-4o")
+        preferred_aiml_model = input_data.get("preferred_aiml_model", "gpt-4o")
 
-        client, api_used, actual_model = get_client_for_model(preferred_model, "gpt-4o")
+        client, api_used, actual_model = get_client_for_model(preferred_aiml_model, "gpt-4o")
 
         prompt = (
             f"You are the chairman of an investment committee. Synthesize the team's analysis into a final, authoritative recommendation for the board. Be decisive. Use clear language. No hedging.\n\n"
             f"Target Company: {company_name}\n"
             f"Reviewer Output:\n{json.dumps(reviewer_output, indent=2)}\n\n"
             f"Full Agent Message Trail:\n{json.dumps(all_messages, indent=2)[:12000]}\n\n"
-            f"Provide an 'internal_audit_log' as a concise 6-8 sentence executive audit summary synthesizing the major evidence, dissent, accepted risk, and final decision. Do not reveal private chain-of-thought; write only board-relevant rationale.\n\n"
+            f"Provide an 'internal_audit_log' as a highly detailed, comprehensive reasoning log exploring every angle, assumption, risk vector, and strategic context (at least 12-15 sentences). Do not hold back on context; provide a rich, exhaustive stream-of-consciousness detailing your executive synthesis, major evidence, dissent, accepted risk, and final decision.\n\n"
             f"CRITICAL REQUIREMENTS FOR `executive_summary`:\n"
             f"The `executive_summary` must be a FULL REPORT written in human-readable language, as if you are presenting to the board of directors. It must be highly detailed and extremely comprehensive.\n"
             f"Structure it exactly as follows, using these exact bold markdown headings:\n"

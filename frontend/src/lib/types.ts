@@ -106,7 +106,8 @@ export interface CreateRoomRequest {
   risk_tolerance: number
   analysis_depth: AnalysisDepth
   persona?: string
-  preferred_model?: string
+  preferred_aiml_model?: string
+  preferred_featherless_model?: string
   document_ids?: string[]
 }
 

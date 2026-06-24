@@ -23,9 +23,9 @@ class AnalystAgent:
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
         cycle = input_data.get("cycle", 1)
-        preferred_model = input_data.get("preferred_model", "gpt-4o")
+        preferred_featherless_model = input_data.get("preferred_featherless_model", "meta-llama/Llama-3.3-70B-Instruct")
 
-        client, api_used, actual_model = get_client_for_model(preferred_model, "mistral-7b")
+        client, api_used, actual_model = get_client_for_model(preferred_featherless_model, "meta-llama/Llama-3.3-70B-Instruct")
 
         prompt = (
             f"You are a forensic financial analyst specializing in enterprise due diligence. "
@@ -38,7 +38,7 @@ class AnalystAgent:
             f"Reviewer feedback to address in this cycle:\n{reviewer_feedback or 'None - first analysis pass.'}\n\n"
             f"Do not invent a different plan. Work through the Planner's subtasks in priority order, and when reviewer feedback is present, explicitly resolve it in the relevant finding or data_gaps entry.\n\n"
             f"Produce decision-grade findings with compact evidence and confidence. "
-            f"Provide an 'internal_audit_log' as a concise 5-7 sentence audit summary describing evidence checked, anomalies found, and unresolved gaps. Do not reveal private chain-of-thought; write only decision-relevant rationale.\n\n"
+            f"Provide an 'internal_audit_log' as a highly detailed, comprehensive reasoning log exploring every angle, assumption, risk vector, and strategic context (at least 12-15 sentences). Do not hold back on context; provide a rich, exhaustive stream-of-consciousness detailing your strategic rationale and anomalies found.\n\n"
             f"Example output:\n"
             f'{{\n'
             f'  "internal_audit_log": "[SYSTEM LOG] Fetching SEC filings and live market data... [DONE]\\n\\n> Initiating deep-dive correlation matrix across Q3 revenue and industry benchmarks. Instantly detecting a divergence in margin expansion versus peer median.\\n\\n> Scraping regulatory dockets for litigation risk... [WARNING] Match found regarding pending intellectual property disputes in the EMEA region. This could severely impact forward-looking EV multiples.\\n\\n> Synthesizing these granular findings into a coherent risk profile. The evidence strongly suggests hidden liabilities. Packaging raw telemetry for Reviewer override...",\n'

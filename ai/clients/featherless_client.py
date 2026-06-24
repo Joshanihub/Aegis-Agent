@@ -13,7 +13,7 @@ class FeatherlessClient:
         self.api_key = os.getenv("FEATHERLESS_API_KEY")
         self.default_model = "mistralai/Mistral-7B-Instruct-v0.2"
         self.fallback_client = AIMLClient()
-        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "1400"))
+        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "4000"))
         self.timeout_seconds = float(os.getenv("AI_COMPLETION_TIMEOUT_SECONDS", "24"))
 
     async def call_completion(self, prompt: str, model: str = None) -> str:

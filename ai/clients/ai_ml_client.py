@@ -11,7 +11,7 @@ class AIMLClient:
         self.base_url = os.getenv("AI_ML_API_BASE_URL", "https://api.aimlapi.com/v1")
         self.api_key = os.getenv("AI_ML_API_KEY")
         self.default_model = "gpt-4o-mini"
-        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "1400"))
+        self.max_tokens = int(os.getenv("AI_COMPLETION_MAX_TOKENS", "4000"))
         self.timeout_seconds = float(os.getenv("AI_COMPLETION_TIMEOUT_SECONDS", "24"))
 
     async def call_completion(self, prompt: str, model: str = None) -> str:

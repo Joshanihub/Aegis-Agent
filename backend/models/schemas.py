@@ -94,7 +94,8 @@ class TaskInput(BaseModel):
     risk_tolerance: int = Field(ge=0, le=100)
     analysis_depth: AnalysisDepth
     persona: str = "Standard Analyst"
-    preferred_model: str = "gpt-4o"
+    preferred_aiml_model: str = "gpt-4o"
+    preferred_featherless_model: str = "meta-llama/Llama-3.3-70B-Instruct"
     document_ids: list[str] = Field(default_factory=list)
 
 
@@ -182,7 +183,8 @@ class TaskState(BaseModel):
     risk_tolerance: int
     analysis_depth: str
     persona: str = "Standard Analyst"
-    preferred_model: str = "gpt-4o"
+    preferred_aiml_model: str = "gpt-4o"
+    preferred_featherless_model: str = "meta-llama/Llama-3.3-70B-Instruct"
     document_ids: list[str] = Field(default_factory=list)
     status: TaskStatus
     current_agent: Optional[str] = None

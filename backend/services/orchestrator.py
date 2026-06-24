@@ -290,7 +290,8 @@ async def run_workflow(
             "risk_tolerance": task.risk_tolerance,
             "analysis_depth": task.analysis_depth,
             "persona": getattr(task, "persona", "Standard Analyst"),
-            "preferred_model": getattr(task, "preferred_model", "gpt-4o"),
+            "preferred_aiml_model": getattr(task, "preferred_aiml_model", "gpt-4o"),
+            "preferred_featherless_model": getattr(task, "preferred_featherless_model", "meta-llama/Llama-3.3-70B-Instruct"),
             "task_id": task_id,
             "room_id": room_id,
         }

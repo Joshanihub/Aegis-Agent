@@ -8,7 +8,10 @@ type AegisIdentifiers = {
   roomId: string | null
   taskId: string | null
   recentSessions: { taskId: string; companyName: string; timestamp: string; status?: TaskStatus }[]
-  preferredModel: string
+  defaultAimlModel: string
+  defaultFeatherlessModel: string
+  defaultRiskTolerance: number
+  defaultAnalysisDepth: 'SURFACE' | 'STANDARD' | 'DEEP'
 }
 
 type AegisSnapshot = {
@@ -37,7 +40,10 @@ type AegisStore = AegisIdentifiers & AegisSnapshot & {
   reset: () => void
   clearSessions: () => void
   setRoomIdentifiers: (roomId: string, taskId: string) => void
-  setPreferredModel: (model: string) => void
+  setDefaultAimlModel: (model: string) => void
+  setDefaultFeatherlessModel: (model: string) => void
+  setDefaultRiskTolerance: (val: number) => void
+  setDefaultAnalysisDepth: (val: 'SURFACE' | 'STANDARD' | 'DEEP') => void
 }
 
 const initialSnapshot: AegisSnapshot = {
@@ -53,7 +59,10 @@ export const useAegisStore = create<AegisStore>()(
       roomId: null,
       taskId: null,
       recentSessions: [],
-      preferredModel: 'auto',
+      defaultAimlModel: 'gpt-4o',
+      defaultFeatherlessModel: 'meta-llama/Llama-3.3-70B-Instruct',
+      defaultRiskTolerance: 50,
+      defaultAnalysisDepth: 'STANDARD',
       ...initialSnapshot,
       roomStatus: 'disconnected',
       wsError: null,
@@ -171,8 +180,17 @@ export const useAegisStore = create<AegisStore>()(
       clearSessions: () =>
         set(() => ({ recentSessions: [] })),
 
-      setPreferredModel: (model) =>
-        set(() => ({ preferredModel: model })),
+      setDefaultAimlModel: (model) =>
+        set(() => ({ defaultAimlModel: model })),
+
+      setDefaultFeatherlessModel: (model) =>
+        set(() => ({ defaultFeatherlessModel: model })),
+
+      setDefaultRiskTolerance: (val) =>
+        set(() => ({ defaultRiskTolerance: val })),
+
+      setDefaultAnalysisDepth: (val) =>
+        set(() => ({ defaultAnalysisDepth: val })),
     }),
     {
       name: 'aegis-session-storage',
@@ -180,7 +198,10 @@ export const useAegisStore = create<AegisStore>()(
         roomId: state.roomId,
         taskId: state.taskId,
         recentSessions: state.recentSessions || [],
-        preferredModel: state.preferredModel
+        defaultAimlModel: state.defaultAimlModel,
+        defaultFeatherlessModel: state.defaultFeatherlessModel,
+        defaultRiskTolerance: state.defaultRiskTolerance,
+        defaultAnalysisDepth: state.defaultAnalysisDepth
       }),
     }
   )

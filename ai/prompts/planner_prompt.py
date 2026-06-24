@@ -18,7 +18,7 @@ class PlannerAgent:
         deal_context = input_data.get("deal_context", "")
         risk_tolerance = input_data.get("risk_tolerance", 50)
         analysis_depth = input_data.get("analysis_depth", "standard")
-        preferred_model = input_data.get("preferred_model", "gpt-4o")
+        preferred_aiml_model = input_data.get("preferred_aiml_model", "gpt-4o")
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
 
@@ -30,7 +30,7 @@ class PlannerAgent:
             f"Risk Tolerance: {risk_tolerance}/100\n"
             f"Analysis Depth: {analysis_depth}\n\n"
             f"Decompose the company/deal into 4-6 structured analysis subtasks. "
-            f"Provide an 'internal_audit_log' as a concise 5-7 sentence audit summary covering assumptions, risk vectors, and strategic angles. Do not reveal private chain-of-thought; write only decision-relevant rationale.\n\n"
+            f"Provide an 'internal_audit_log' as a highly detailed, comprehensive reasoning log exploring every angle, assumption, risk vector, and strategic context (at least 12-15 sentences). Do not hold back on context; provide a rich, exhaustive stream-of-consciousness detailing your strategic rationale.\n\n"
             f"Example output:\n"
             f'{{\n'
             f'  "internal_audit_log": "[SYSTEM LOG] Establishing encrypted connection... [100%]\\n\\n> Initiating deep strategic decomposition of target parameters. Initial scan reveals several multi-layered risk vectors spanning across financials, regulatory constraints, and emerging technological dependencies.\\n\\n> Drilling down into financial structures: Considering the requested analysis depth, it is imperative we audit revenue sustainability against macroeconomic headwinds. I am setting a priority flag on gross margin compression.\\n\\n> Constructing 4 discrete deployment subtasks for the intelligence committee. Prioritizing regulatory compliance first due to recent shifts in anti-trust laws, followed by quantitative health...",\n'
@@ -54,7 +54,7 @@ class PlannerAgent:
         try:
             for attempt in range(3):
                 # Auto-route logic for Planner (Defaults to GPT-4o for complex decomposition)
-                client, api_used, actual_model = get_client_for_model(preferred_model, "gpt-4o")
+                client, api_used, actual_model = get_client_for_model(preferred_aiml_model, "gpt-4o")
                 response = await client.call_completion(prompt, model=actual_model)
                 
                 cleaned = extract_json_from_response(response)

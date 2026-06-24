@@ -27,7 +27,7 @@ function sessionHref(session: { taskId: string; status?: TaskStatus }) {
 
 export default function DashboardPage() {
   const recentSessions = useAegisStore((s) => s.recentSessions || [])
-  const preferredModel = useAegisStore((s) => s.preferredModel || 'auto')
+  const defaultAimlModel = useAegisStore((s) => s.defaultAimlModel || 'gpt-4o')
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               <div className="glass-panel p-6 rounded-xl flex items-center justify-between group hover:border-border-subtle/80 transition-colors">
                 <div>
                   <p className="font-mono text-[10px] text-on-surface-variant tracking-[0.1em] uppercase mb-2">Inference Model</p>
-                  <p className="font-mono text-sm font-bold text-on-surface truncate max-w-[160px] mt-1">{preferredModel}</p>
+                  <p className="font-mono text-sm font-bold text-on-surface truncate max-w-[160px] mt-1">{defaultAimlModel}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-indigo-init/10 flex items-center justify-center text-indigo-init group-hover:scale-110 transition-transform">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>

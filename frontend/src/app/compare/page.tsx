@@ -109,12 +109,18 @@ function CompareContent() {
                   <GlassPanel className="p-6 border-l-2 border-l-cyan-agent">
                     <MonoLabel className="text-cyan-agent mb-3">ALTERNATIVE</MonoLabel>
                     <h2 className="font-headline text-3xl font-bold text-on-surface">{comparison.alternative_company}</h2>
-                    <div className="mt-6 text-6xl font-bold text-cyan-agent">
-                      {comparison.alternative_risk_score ?? 'Pending'}
+                    <div className="flex flex-col">
+                      <span className="font-headline text-4xl text-on-surface font-bold tracking-tight">
+                        {comparison.alternative_risk_score ?? 'Pending'}
+                      </span>
+                      <span className="text-xs text-on-surface-variant font-mono uppercase tracking-widest mt-1">
+                        {comparison.alternative_risk_score === null 
+                          ? 'Requires completed competitor dossier' 
+                          : comparison.method === 'estimated_competitor_dossier'
+                            ? 'Estimated risk score'
+                            : 'Risk score from completed competitor dossier'}
+                      </span>
                     </div>
-                    <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest mt-2">
-                      {comparison.alternative_risk_score === null ? 'Requires completed competitor dossier' : 'Risk score from completed competitor dossier'}
-                    </p>
                   </GlassPanel>
                 </div>
 

@@ -354,9 +354,8 @@ async def compare_alternative(task_id: str, body: CompareInput) -> ComparisonDat
     prompt = (
         "You are an investment committee comparison analyst. Compare the completed target "
         "against the proposed alternative using only the supplied Aegis dossier and agent trail. "
-        "Do not invent external facts. Because no completed competitor dossier exists, "
-        "alternative_risk_score MUST be null and the recommendation MUST tell the user to run "
-        "a full analysis for the competitor before treating the comparison as decision-ready.\n\n"
+        "Do not invent external facts. Estimate the alternative_risk_score based on your knowledge "
+        "of the competitor and the context provided.\n\n"
         f"Primary company: {task.company_name}\n"
         f"Alternative company: {body.alternative}\n"
         f"Primary verdict:\n{json.dumps(verdict.model_dump(mode='json'), indent=2)}\n\n"
@@ -380,12 +379,11 @@ async def compare_alternative(task_id: str, body: CompareInput) -> ComparisonDat
 
     try:
         client, _api_used, model = get_client_for_model(
-            getattr(task, "preferred_model", "gpt-4o"), "gpt-4o-mini"
+            getattr(task, "preferred_aiml_model", "gpt-4o"), "gpt-4o-mini"
         )
         response = await client.call_completion(prompt, model=model)
         data = json.loads(extract_json_from_response(response))
-        data["alternative_risk_score"] = None
-        data["method"] = data.get("method") or "pending_competitor_dossier"
+        data["method"] = data.get("method") or "estimated_competitor_dossier"
         return ComparisonData.model_validate(data)
     except Exception as exc:
         logger.warning("Comparison generation failed for %s: %s", task_id, exc)

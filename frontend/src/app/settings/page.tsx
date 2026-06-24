@@ -9,8 +9,14 @@ import { useAegisStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 
 export default function SettingsPage() {
-  const preferredModel = useAegisStore(s => s.preferredModel)
-  const setPreferredModel = useAegisStore(s => s.setPreferredModel)
+  const defaultAimlModel = useAegisStore(s => s.defaultAimlModel)
+  const setDefaultAimlModel = useAegisStore(s => s.setDefaultAimlModel)
+  const defaultFeatherlessModel = useAegisStore(s => s.defaultFeatherlessModel)
+  const setDefaultFeatherlessModel = useAegisStore(s => s.setDefaultFeatherlessModel)
+  const defaultRiskTolerance = useAegisStore(s => s.defaultRiskTolerance)
+  const setDefaultRiskTolerance = useAegisStore(s => s.setDefaultRiskTolerance)
+  const defaultAnalysisDepth = useAegisStore(s => s.defaultAnalysisDepth)
+  const setDefaultAnalysisDepth = useAegisStore(s => s.setDefaultAnalysisDepth)
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -60,33 +66,43 @@ export default function SettingsPage() {
                 </p>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-surface-container-low border border-border-subtle rounded-lg">
-                    <div>
-                      <h4 className="font-semibold text-on-surface text-sm">Global Inference Model</h4>
-                      <p className="text-xs text-on-surface-variant mt-1">Select the preferred model for analysis tasks. Default is auto-routing.</p>
-                    </div>
-                    <select 
-                      className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" 
-                      value={preferredModel}
-                      onChange={(e) => setPreferredModel(e.target.value)}
-                    >
-                      <option value="auto">Auto Route (Optimized)</option>
-                      <optgroup label="AI/ML API Models">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between p-4 bg-surface-container-low border border-border-subtle rounded-lg">
+                      <div>
+                        <h4 className="font-semibold text-on-surface text-sm">Reasoning Engine (AI/ML)</h4>
+                        <p className="text-xs text-on-surface-variant mt-1">Default model for heavy logic agents (Planner, Reviewer, Finalizer).</p>
+                      </div>
+                      <select 
+                        className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" 
+                        value={defaultAimlModel}
+                        onChange={(e) => setDefaultAimlModel(e.target.value)}
+                      >
                         <option value="gpt-4o">GPT-4o (Default)</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
                         <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                        <option value="o1-preview">o1 Preview</option>
+                        <option value="o3-mini">o3 Mini</option>
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                         <option value="claude-3-opus-20240229">Claude 3 Opus</option>
                         <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                      </optgroup>
-                      <optgroup label="Featherless AI Models">
-                        <option value="mistral-7b">Mistral 7B Instruct</option>
-                        <option value="meta-llama/Meta-Llama-3-8B-Instruct">Llama 3 (8B)</option>
-                        <option value="meta-llama/Meta-Llama-3-70B-Instruct">Llama 3 (70B)</option>
-                        <option value="Qwen/Qwen2-72B-Instruct">Qwen2 (72B)</option>
-                      </optgroup>
-                    </select>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-surface-container-low border border-border-subtle rounded-lg">
+                      <div>
+                        <h4 className="font-semibold text-on-surface text-sm">Data Engine (Featherless)</h4>
+                        <p className="text-xs text-on-surface-variant mt-1">Default model for data processing agents (Analyst).</p>
+                      </div>
+                      <select 
+                        className="bg-surface border border-border-subtle rounded-md px-4 py-2 text-sm text-primary font-mono focus:outline-none focus:border-primary w-[250px]" 
+                        value={defaultFeatherlessModel}
+                        onChange={(e) => setDefaultFeatherlessModel(e.target.value)}
+                      >
+                        <option value="meta-llama/Llama-3.3-70B-Instruct">Llama 3.3 (70B)</option>
+                        <option value="meta-llama/Llama-3.1-405B-Instruct">Llama 3.1 (405B)</option>
+                        <option value="Qwen/Qwen2.5-72B-Instruct">Qwen2.5 (72B)</option>
+                        <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </GlassPanel>
@@ -98,7 +114,13 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-semibold text-on-surface mb-2">Default Risk Tolerance</label>
-                    <input type="range" min="0" max="100" defaultValue="50" className="w-full accent-primary h-2 bg-surface-container rounded-lg appearance-none cursor-pointer" />
+                    <input 
+                      type="range" 
+                      min="0" max="100" 
+                      value={defaultRiskTolerance} 
+                      onChange={(e) => setDefaultRiskTolerance(Number(e.target.value))}
+                      className="w-full accent-primary h-2 bg-surface-container rounded-lg appearance-none cursor-pointer" 
+                    />
                     <div className="flex justify-between text-xs text-on-surface-variant mt-2 font-mono">
                       <span>0 (CONSERVATIVE)</span>
                       <span>100 (AGGRESSIVE)</span>
@@ -108,9 +130,24 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-semibold text-on-surface mb-2">Default Analysis Depth</label>
                     <div className="flex gap-2">
-                      <button className="flex-1 py-2 rounded border border-border-subtle bg-surface hover:bg-surface-container-high transition-colors text-sm font-mono text-on-surface-variant">SURFACE</button>
-                      <button className="flex-1 py-2 rounded border border-primary bg-primary-container/10 text-primary transition-colors text-sm font-mono font-bold">STANDARD</button>
-                      <button className="flex-1 py-2 rounded border border-border-subtle bg-surface hover:bg-surface-container-high transition-colors text-sm font-mono text-on-surface-variant">DEEP</button>
+                      <button 
+                        onClick={() => setDefaultAnalysisDepth('SURFACE')}
+                        className={`flex-1 py-2 rounded border transition-colors text-sm font-mono ${defaultAnalysisDepth === 'SURFACE' ? 'border-primary bg-primary-container/10 text-primary font-bold' : 'border-border-subtle bg-surface hover:bg-surface-container-high text-on-surface-variant'}`}
+                      >
+                        SURFACE
+                      </button>
+                      <button 
+                        onClick={() => setDefaultAnalysisDepth('STANDARD')}
+                        className={`flex-1 py-2 rounded border transition-colors text-sm font-mono ${defaultAnalysisDepth === 'STANDARD' ? 'border-primary bg-primary-container/10 text-primary font-bold' : 'border-border-subtle bg-surface hover:bg-surface-container-high text-on-surface-variant'}`}
+                      >
+                        STANDARD
+                      </button>
+                      <button 
+                        onClick={() => setDefaultAnalysisDepth('DEEP')}
+                        className={`flex-1 py-2 rounded border transition-colors text-sm font-mono ${defaultAnalysisDepth === 'DEEP' ? 'border-primary bg-primary-container/10 text-primary font-bold' : 'border-border-subtle bg-surface hover:bg-surface-container-high text-on-surface-variant'}`}
+                      >
+                        DEEP
+                      </button>
                     </div>
                   </div>
                 </div>

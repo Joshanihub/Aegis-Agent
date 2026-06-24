@@ -26,9 +26,9 @@ class ReviewerAgent:
         task_id = input_data.get("task_id", "")
         room_id = input_data.get("room_id", "")
         cycle = input_data.get("cycle", 1)
-        preferred_model = input_data.get("preferred_model", "gpt-4o")
+        preferred_aiml_model = input_data.get("preferred_aiml_model", "gpt-4o")
 
-        client, api_used, actual_model = get_client_for_model(preferred_model, "mistral-7b")
+        client, api_used, actual_model = get_client_for_model(preferred_aiml_model, "gpt-4o")
 
         prompt = (
             f"You are a risk-focused legal reviewer. Your job is to find flaws, gaps, and threats in the analyst's findings. "
@@ -47,7 +47,7 @@ class ReviewerAgent:
             f"Set approved=false only when the Analyst must perform another pass because material gaps or contradictions make the current findings unreliable. "
             f"Ordinary risks, cautionary issues, or tolerable data gaps should remain approved=true with critical_issues and a calibrated risk_score. "
             f"Human escalation is handled outside your JSON; do not reject merely to force human oversight.\n"
-            f"Provide an 'internal_audit_log' as a concise 5-7 sentence audit summary describing the pressure tests applied, accepted risks, rejected assumptions, and any required rework. Do not reveal private chain-of-thought; write only decision-relevant rationale.\n\n"
+            f"Provide an 'internal_audit_log' as a highly detailed, comprehensive reasoning log exploring every angle, assumption, risk vector, and strategic context (at least 12-15 sentences). Do not hold back on context; provide a rich, exhaustive stream-of-consciousness detailing the pressure tests applied, accepted risks, rejected assumptions, and any required rework.\n\n"
             f"Example output:\n"
             f'{{\n'
             f'  "internal_audit_log": "[SYSTEM LOG] Initializing adversarial review protocol... [DONE]\\n\\n> Injecting synthetic market shock scenario into Analyst model. The baseline revenue projections provided by the analyst fail to account for a 20% contraction in consumer spending. I am flagging this as a critical oversight.\\n\\n> Probing deeper into the regulatory findings: The analyst noted compliance, but missed a pending legislative bill in the EU that directly impacts their core data harvesting model. This is unacceptable.\\n\\n> Forcing revision cycle on Subtask 1. The target must prove resilience against these twin vectors. Adjusting risk score to reflect the exposed vulnerabilities...",\n'
